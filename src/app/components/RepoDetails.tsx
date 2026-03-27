@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, Star, Code, Gem, ToyBrick, Scale, Users, CheckCircle, Info, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, Star, Code, Gem, Users, CheckCircle, MoreHorizontal } from 'lucide-react';
 import type { Repo } from './RepoCard';
 
+// 1. Define the props interface
 interface RepoDetailsProps {
   repo: Repo;
   showShopActions: boolean;
@@ -10,27 +11,33 @@ interface RepoDetailsProps {
   onClose: () => void;
 }
 
-// Main Component: RepoDetails
+// 2. Update the main component signature
 export default function RepoDetails({ repo, showShopActions, onRun, onClose }: RepoDetailsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="bg-zinc-950 text-white font-sans min-h-screen">
+      {/* 3. Pass props down correctly */}
       <Header onClose={onClose} />
       <main className="px-4 pt-20 pb-16">
         <HeroSection repo={repo} onRun={onRun} showShopActions={showShopActions} />
         <StatsRow repo={repo} />
         <WhatsNewSection />
         <MediaCarousel />
-        <DescriptionSection description={repo.plainEnglishDescription} />
+        <DescriptionSection 
+          description={repo.plainEnglishDescription} 
+          isExpanded={isExpanded} 
+          onToggle={() => setIsExpanded(!isExpanded)} 
+        />
         <InformationGrid repo={repo} />
       </main>
     </div>
   );
 }
 
-// --- Component Sections ---
+// --- Component Sections (with updated props) ---
 
+// 4. Update all sub-components
 const Header = ({ onClose }: { onClose: () => void }) => (
   <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-800/50">
     <button onClick={onClose} className="p-2">
@@ -45,7 +52,7 @@ const Header = ({ onClose }: { onClose: () => void }) => (
   </header>
 );
 
-const HeroSection = ({ repo, onRun, showShopActions }: { repo: Repo, onRun: (repo: Repo) => void, showShopActions: boolean }) => (
+const HeroSection = ({ repo, onRun, showShopActions }: { repo: Repo; onRun: (repo: Repo) => void; showShopActions: boolean }) => (
   <section className="flex flex-col items-start pt-8 pb-6 border-b border-zinc-800">
     <div className="flex items-center w-full">
       <div className="w-24 h-24 bg-zinc-800 rounded-2xl flex-shrink-0 relative overflow-hidden">
@@ -63,20 +70,20 @@ const HeroSection = ({ repo, onRun, showShopActions }: { repo: Repo, onRun: (rep
 );
 
 const StatsRow = ({ repo }: { repo: Repo }) => {
-  const starRating = repo.stars > 1000 ? (repo.stars / 1000).toFixed(1) + 'k' : repo.stars;
-  return (
-    <div className="overflow-x-auto py-4 whitespace-nowrap scrollbar-hide">
-      <div className="flex space-x-6 text-zinc-400 text-sm text-center">
-        <StatItem value={String(starRating)} label="Stars" icon={<Star size={20} className="text-yellow-400" />} />
-        <Divider />
-        <StatItem value={repo.language || 'Code'} label="Category" icon={<Code size={20} className="text-green-400" />} />
-        <Divider />
-        <StatItem value="4+" label="Age" icon={<Users size={20} className="text-purple-400" />} />
-        <Divider />
-        <StatItem value="Private" label="Security" icon={<CheckCircle size={20} className="text-blue-400" />} />
-      </div>
-    </div>
-  );
+    const starRating = repo.stars > 1000 ? `${(repo.stars / 1000).toFixed(1)}k` : repo.stars;
+    return (
+        <div className="overflow-x-auto py-4 whitespace-nowrap scrollbar-hide">
+            <div className="flex space-x-6 text-zinc-400 text-sm text-center">
+                <StatItem value={String(starRating)} label="Stars" icon={<Star size={20} className="text-yellow-400" />} />
+                <Divider />
+                <StatItem value={repo.language || 'Code'} label="Category" icon={<Code size={20} className="text-green-400" />} />
+                <Divider />
+                <StatItem value="4+" label="Age" icon={<Users size={20} className="text-purple-400" />} />
+                <Divider />
+                <StatItem value="Private" label="Security" icon={<CheckCircle size={20} className="text-blue-400" />} />
+            </div>
+        </div>
+    );
 };
 
 const WhatsNewSection = () => (
@@ -98,7 +105,6 @@ const MediaCarousel = () => (
   <section className="py-6">
     <div className="overflow-x-auto scrollbar-hide">
       <div className="flex space-x-4">
-        {/* Placeholder Screenshots */}
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-zinc-800 rounded-xl w-64 h-96 flex-shrink-0" />
         ))}
@@ -107,25 +113,18 @@ const MediaCarousel = () => (
   </section>
 );
 
-const DescriptionSection = ({ description }: { description: string }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const hasMore = description.length > 200; // Simple check for expandability
-
-  return (
-    <section className="py-6 border-b border-zinc-800">
-      <div className={`relative overflow-hidden transition-max-height duration-500 ease-in-out ${isExpanded ? 'max-h-full' : 'max-h-24'}`}>
-        <p className="text-zinc-300 leading-relaxed">
-          {description}
-        </p>
-      </div>
-      {hasMore && (
-        <button onClick={() => setIsExpanded(!isExpanded)} className="text-blue-500 font-semibold mt-2">
-          {isExpanded ? 'less' : 'more'}
-        </button>
-      )}
-    </section>
-  );
-};
+const DescriptionSection = ({ description, isExpanded, onToggle }: { description: string; isExpanded: boolean; onToggle: () => void; }) => (
+  <section className="py-6 border-b border-zinc-800">
+    <div className={`relative overflow-hidden transition-max-height duration-500 ease-in-out ${isExpanded ? 'max-h-full' : 'max-h-24'}`}>
+      <p className="text-zinc-300 leading-relaxed">
+        {description}
+      </p>
+    </div>
+    <button onClick={onToggle} className="text-blue-500 font-semibold mt-2">
+      {isExpanded ? 'less' : 'more'}
+    </button>
+  </section>
+);
 
 const InformationGrid = ({ repo }: { repo: Repo }) => (
   <section className="py-6">
@@ -139,8 +138,7 @@ const InformationGrid = ({ repo }: { repo: Repo }) => (
   </section>
 );
 
-
-// --- Helper Components ---
+// --- Helper Components (These don't need props from the top) ---
 
 const StatItem = ({ value, label, icon }: { value: string; label: string; icon: React.ReactNode; }) => (
   <div className="flex flex-col items-center space-y-1">
