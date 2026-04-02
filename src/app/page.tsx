@@ -7,6 +7,7 @@ import { Search, Loader2, Bookmark, Eye, Rocket, CheckCircle2, AlertCircle, Wren
 import Sidebar, { Tab } from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
 import NewsTicker from "./components/NewsTicker";
+import { memo } from "react";
 import RepoCard, { Repo } from "./components/RepoCard";
 import SettingsPanel from "./components/SettingsPanel";
 import RepoDetails from "./components/RepoDetails";
@@ -82,6 +83,13 @@ interface RuntimeRunJob {
   };
   logs: string[];
 }
+
+const RepoListItem = memo(({ repo, onView, onRun }: { repo: Repo; onView: (repo: Repo) => void; onRun: (repo: Repo) => void }) => (
+  <div onClick={() => onView(repo)} className="cursor-pointer">
+    <RepoCard repo={repo} onRun={onRun} />
+  </div>
+));
+RepoListItem.displayName = "RepoListItem";
 
 function buildDiscoverSections(repos: Repo[]): DiscoverSection[] {
   const sectionDefinitions: Omit<DiscoverSection, "repos">[] = [
@@ -279,14 +287,14 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [activeTab, fetchRunJobs]);
 
-  function handleRepoView(repo: Repo) {
+  const handleRepoView = useCallback((repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedFromTab(activeTab);
     setSelectedRepo(repo);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab]);
 
-  async function handleRunRepo(repo: Repo) {
+  const handleRunRepo = useCallback(async (repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedRepo(null);
     setSelectedFromTab(activeTab);
@@ -305,7 +313,7 @@ export default function Home() {
       setIsRunQueueLoading(false);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab, fetchRunJobs]);
 
   const isInSearchMode = searchQuery.trim().length > 0 && searchResults.length > 0;
   const displayRepos = isInSearchMode ? searchResults : feedRepos;
@@ -625,9 +633,12 @@ export default function Home() {
                           </div>
                           <div className="grid grid-cols-1 gap-x-8 gap-y-2 lg:grid-cols-2">
                             {visibleSectionRepos.map((repo) => (
-                              <div key={repo.id} onClick={() => handleRepoView(repo)} className="cursor-pointer">
-                                <RepoCard repo={repo} onRun={handleRunRepo} />
-                              </div>
+                              <RepoListItem
+                                key={repo.id}
+                                repo={repo}
+                                onView={handleRepoView}
+                                onRun={handleRunRepo}
+                              />
                             ))}
                           </div>
                         </section>
@@ -654,9 +665,12 @@ export default function Home() {
                     
                     <div className="grid grid-cols-1 gap-x-8 gap-y-2 lg:grid-cols-2">
                       {visibleRepos.map((repo) => (
-                        <div key={repo.id} onClick={() => handleRepoView(repo)} className="cursor-pointer">
-                          <RepoCard repo={repo} onRun={handleRunRepo} />
-                        </div>
+                        <RepoListItem
+                          key={repo.id}
+                          repo={repo}
+                          onView={handleRepoView}
+                          onRun={handleRunRepo}
+                        />
                       ))}
                     </div>
                   </div>
@@ -673,9 +687,12 @@ export default function Home() {
                         </div>
                         <div className="grid grid-cols-1 gap-x-8 gap-y-2 lg:grid-cols-2">
                           {reposInCat.map((repo) => (
-                            <div key={repo.id} onClick={() => handleRepoView(repo)} className="cursor-pointer">
-                              <RepoCard repo={repo} onRun={handleRunRepo} />
-                            </div>
+                            <RepoListItem
+                              key={repo.id}
+                              repo={repo}
+                              onView={handleRepoView}
+                              onRun={handleRunRepo}
+                            />
                           ))}
                         </div>
                       </div>
