@@ -154,26 +154,31 @@ export default function RepoDetails({ repo, onClose, onRun }: RepoDetailsProps) 
           </div>
         </section>
 
-        <section className="mb-8 overflow-x-auto">
-          <div className="inline-flex min-w-full items-stretch rounded-2xl border border-white/10 bg-zinc-900/70 px-2 py-3">
-            <div className="min-w-[130px] px-3 text-center">
-              <p className="text-xs font-medium text-zinc-500">Rating</p>
-              <p className="mt-1 text-sm font-semibold text-white">4.8 <span className="text-zinc-400">Stars</span></p>
+        <section className="mb-8">
+          <div className="flex items-stretch rounded-2xl border border-white/10 bg-zinc-900/70 px-1 py-3 overflow-x-auto hide-scrollbars shadow-inner">
+            <div className="flex-1 min-w-[110px] px-4 text-center border-r border-white/10">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Rating</p>
+              <p className="mt-1.5 text-[15px] font-black text-white">4.8</p>
+              <div className="mt-1 flex justify-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <div key={s} className="h-1 w-1 rounded-full bg-blue-500" />
+                ))}
+              </div>
             </div>
-            <div className="w-px bg-white/10" />
-            <div className="min-w-[130px] px-3 text-center">
-              <p className="text-xs font-medium text-zinc-500">Category</p>
-              <p className="mt-1 text-sm font-semibold text-white">{category}</p>
+            <div className="flex-1 min-w-[130px] px-4 text-center border-r border-white/10">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Category</p>
+              <p className="mt-1.5 text-[15px] font-black text-white truncate">{category}</p>
+              <p className="mt-1 text-[10px] text-zinc-500 font-medium">Utilities</p>
             </div>
-            <div className="w-px bg-white/10" />
-            <div className="min-w-[130px] px-3 text-center">
-              <p className="text-xs font-medium text-zinc-500">Age</p>
-              <p className="mt-1 text-sm font-semibold text-white">{ageRating}+</p>
+            <div className="flex-1 min-w-[90px] px-4 text-center border-r border-white/10">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Age</p>
+              <p className="mt-1.5 text-[15px] font-black text-white">{ageRating}+</p>
+              <p className="mt-1 text-[10px] text-zinc-500 font-medium">Years Old</p>
             </div>
-            <div className="w-px bg-white/10" />
-            <div className="min-w-[130px] px-3 text-center">
-              <p className="text-xs font-medium text-zinc-500">Likes</p>
-              <p className="mt-1 text-sm font-semibold text-white">{formatCompact(stars)}</p>
+            <div className="flex-1 min-w-[110px] px-4 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Popularity</p>
+              <p className="mt-1.5 text-[15px] font-black text-white">{formatCompact(stars)}</p>
+              <p className="mt-1 text-[10px] text-zinc-500 font-medium">Stars</p>
             </div>
           </div>
         </section>

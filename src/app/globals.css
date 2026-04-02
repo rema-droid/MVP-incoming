@@ -10,11 +10,32 @@
   .squircle {
     border-radius: 22.5%; /* Approximate continuous corner */
   }
+
+  .interactive-hover {
+    transition: all 0.3s ease;
+  }
+  .interactive-hover:hover {
+    transform: scale(1.02);
+  }
+  .interactive-hover:active {
+    transform: scale(0.98);
+  }
+
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }
 
 :root {
   --background: #042a33;
   --foreground: #ffffff;
+  --sidebar: #031d24;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.08);
 }
 
 body {

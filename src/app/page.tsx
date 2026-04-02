@@ -336,11 +336,13 @@ export default function Home() {
         onSearchSubmit={handleSearch}
       />
 
-      <main className="flex h-[100dvh] bg-[#042a33] w-full flex-1 flex-col overflow-y-auto px-4 py-8 pb-32 sm:px-10 sm:py-10">
+      <main className="flex h-[100dvh] bg-[#042a33] w-full flex-1 flex-col overflow-y-auto px-4 py-8 pb-32 sm:px-8 sm:py-12 lg:px-12">
         {selectedRepo ? (
-          <RepoDetails key={selectedRepo.id} repo={selectedRepo} showShopActions={selectedFromTab === "shop"} onRun={handleRunRepo} onClose={() => setSelectedRepo(null)} />
+          <div className="mx-auto w-full max-w-[900px]">
+            <RepoDetails key={selectedRepo.id} repo={selectedRepo} showShopActions={selectedFromTab === "shop"} onRun={handleRunRepo} onClose={() => setSelectedRepo(null)} />
+          </div>
         ) : showFeed ? (
-          <div className="mx-auto w-full max-w-[1000px] flex flex-col gap-10">
+          <div className="mx-auto w-full max-w-[1100px] flex flex-col gap-12">
             
             <form onSubmit={handleSearch} className="w-full lg:hidden block">
               <div className="relative">

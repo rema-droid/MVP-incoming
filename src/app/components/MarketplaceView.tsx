@@ -13,7 +13,6 @@ import {
   Package,
   ArrowUpDown,
   Shield,
-  Clock,
   Flame,
   ChevronRight,
 } from "lucide-react";
@@ -193,16 +192,16 @@ function MarketplaceCard({
               e.stopPropagation();
               onRun();
             }}
-            className="flex h-[30px] items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-[12px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
+            className="flex h-[30px] items-center justify-center gap-1.5 rounded-full border border-blue-400/30 bg-gradient-to-br from-blue-600 to-blue-500 px-4 text-[11px] font-bold text-white transition-all hover:scale-[1.04] hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] active:scale-[0.98]"
           >
-            <Play className="h-3 w-3 fill-blue-400" /> Run
+            <Play className="h-2.5 w-2.5 fill-white" /> Run
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
               window.open(repo.url, "_blank");
             }}
-            className={`flex h-[30px] items-center justify-center rounded-lg border px-3 text-[12px] font-bold transition-all ${
+            className={`flex h-[30px] items-center justify-center rounded-full border px-3 text-[11px] font-bold transition-all ${
               price === "Free"
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
@@ -293,7 +292,7 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
   }
 
   return (
-    <div className="flex flex-col gap-10 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-14 animate-in fade-in duration-300">
 
       {/* ═══ Hero Spotlight ═══ */}
       {spotlightRepos.length > 0 && (
@@ -437,8 +436,8 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-purple-400" />
-              <h2 className="text-xl font-bold tracking-tight text-white">Staff Picks</h2>
+              <Award className="h-6 w-6 text-purple-400" />
+              <h2 className="text-2xl font-bold tracking-tight text-white">Staff Picks</h2>
             </div>
             <span className="text-[12px] text-zinc-500">Curated by GITMURPH</span>
           </div>
@@ -483,12 +482,12 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
       {trendingNow.length > 0 && activeCategory === "all" && !marketSearch.trim() && (
         <section className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-orange-400" />
-            <h2 className="text-xl font-bold tracking-tight text-white">Trending Now</h2>
+            <TrendingUp className="h-6 w-6 text-orange-400" />
+            <h2 className="text-2xl font-bold tracking-tight text-white">Trending Now</h2>
             <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
           </div>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {trendingNow.map((repo, idx) => (
+            {trendingNow.map((repo) => (
               <MarketplaceCard
                 key={repo.id}
                 repo={repo}
@@ -534,11 +533,11 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {filteredRepos.slice(0, 30).map((repo, idx) => (
+            {filteredRepos.slice(0, 30).map((repo, i) => (
               <MarketplaceCard
                 key={repo.id}
                 repo={repo}
-                badge={getBadge(repo, idx)}
+                badge={getBadge(repo, i)}
                 onView={() => onRepoView(repo)}
                 onRun={() => onRun(repo)}
               />

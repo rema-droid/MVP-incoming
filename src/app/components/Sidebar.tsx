@@ -24,52 +24,22 @@ export default function Sidebar({
       activeTab === id ? "text-blue-400" : "text-blue-400/60"
     }`;
 
-  const navItems = [
-    {
-      label: "Explore",
-      id: "discover" as Tab,
-      icon: <Star className={getIconClass("discover")} />,
-    },
-    {
-      label: "Types",
-      id: "categories" as Tab,
-      icon: <LayoutGrid className={getIconClass("categories")} />,
-    },
-    {
-      label: "Marketplace",
-      id: "shop" as Tab,
-      icon: <Store className={getIconClass("shop")} />,
-    },
-    {
-      label: "Feed",
-      id: "feed" as Tab,
-      icon: <Rss className={getIconClass("feed")} />,
-    },
-    {
-      label: "Try Apps",
-      id: "runtime" as Tab,
-      icon: <Rocket className={getIconClass("runtime")} />,
-    },
-    {
-      label: "Popular now",
-      id: "trending" as Tab,
-      icon: <Flame className={getIconClass("trending")} />,
-    },
-    {
-      label: "Recently Viewed",
-      id: "viewed" as Tab,
-      icon: <Eye className={getIconClass("viewed")} />,
-    },
-    {
-      label: "Saved",
-      id: "bookmarks" as Tab,
-      icon: <Bookmark className={getIconClass("bookmarks")} />,
-    },
-    {
-      label: "Options",
-      id: "settings" as Tab,
-      icon: <Settings className={getIconClass("settings")} />,
-    },
+  const exploreItems = [
+    { label: "Explore", id: "discover" as Tab, icon: <Star className={getIconClass("discover")} /> },
+    { label: "Types", id: "categories" as Tab, icon: <LayoutGrid className={getIconClass("categories")} /> },
+    { label: "Marketplace", id: "shop" as Tab, icon: <Store className={getIconClass("shop")} /> },
+    { label: "Feed", id: "feed" as Tab, icon: <Rss className={getIconClass("feed")} /> },
+  ];
+
+  const libraryItems = [
+    { label: "Popular now", id: "trending" as Tab, icon: <Flame className={getIconClass("trending")} /> },
+    { label: "Recently Viewed", id: "viewed" as Tab, icon: <Eye className={getIconClass("viewed")} /> },
+    { label: "Saved", id: "bookmarks" as Tab, icon: <Bookmark className={getIconClass("bookmarks")} /> },
+  ];
+
+  const systemItems = [
+    { label: "Try Apps", id: "runtime" as Tab, icon: <Rocket className={getIconClass("runtime")} /> },
+    { label: "Options", id: "settings" as Tab, icon: <Settings className={getIconClass("settings")} /> },
   ];
 
   return (
@@ -98,32 +68,67 @@ export default function Sidebar({
             placeholder="Search"
             className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
           />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] font-medium text-zinc-500">
+            <span className="text-[9px]">⌘</span>K
+          </div>
         </form>
       </div>
 
       {/* ── Navigation List ── */}
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-2 overflow-y-auto">
-        {navItems.map((item) => {
-          // Add visual separators
-          const isDivider = item.id === "viewed" || item.id === "settings";
-          
-          return (
-            <div key={item.id} className="w-full">
-              {isDivider && <div className="mx-2 my-3 border-t border-white/5" />}
-              <button
-                onClick={() => onTabChange(item.id)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  activeTab === item.id
-                    ? "bg-white/10 text-white"
-                    : "text-zinc-400 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            </div>
-          );
-        })}
+      <nav className="flex flex-1 flex-col gap-6 px-3 py-2 overflow-y-auto">
+        <div className="flex flex-col gap-1">
+          <h3 className="px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 mb-1">Explore</h3>
+          {exploreItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === item.id
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <h3 className="px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 mb-1">Library</h3>
+          {libraryItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === item.id
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <h3 className="px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 mb-1">System</h3>
+          {systemItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === item.id
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* ── Profile Bottom Region ── */}

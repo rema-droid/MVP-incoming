@@ -298,10 +298,10 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
             }
             window.open(repo.url, "_blank");
           }}
-          className="flex h-[34px] min-w-[80px] items-center justify-center gap-1.5 rounded-[8px] border border-blue-500/30 bg-blue-500/10 px-4 text-[13px] font-bold tracking-wide text-blue-400 transition-all hover:bg-blue-500/20 hover:border-blue-500/50 shadow-inner group-hover:bg-blue-500/30"
+          className="flex h-[34px] min-w-[84px] items-center justify-center gap-1.5 rounded-full border border-blue-400/30 bg-gradient-to-br from-blue-600 to-blue-500 px-4 text-[12px] font-bold tracking-wide text-white transition-all hover:scale-[1.04] hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] active:scale-[0.98]"
           aria-label={`Run ${repo.title}`}
         >
-          <Play className="h-3 w-3 fill-blue-400" /> Run
+          <Play className="h-3 w-3 fill-white" /> Run
         </button>
         {showPrice ? (
           <button
@@ -309,7 +309,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
               e.stopPropagation();
               window.open(repo.url, "_blank");
             }}
-            className="flex h-[34px] min-w-[76px] items-center justify-center rounded-[8px] border border-emerald-500/30 bg-emerald-500/10 px-4 text-[13px] font-bold tracking-wide text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-inner"
+            className="flex h-[34px] min-w-[80px] items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 text-[12px] font-bold tracking-wide text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50"
             aria-label={`Get ${repo.title}`}
           >
             {priceLabel}

@@ -119,7 +119,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
-  const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
+  const cardClasses = "group cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/20 hover:shadow-[0_12px_48px_rgba(0,0,0,0.4)] hover:-translate-y-1 feed-card-enter";
   const cardStyle = { animationDelay: `${index * 80}ms` };
 
   /* ── AI Summary Card ── */
@@ -135,7 +135,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
     return (
       <article onClick={onView} className={cardClasses} style={cardStyle}>
-        <div className={`bg-gradient-to-br ${gradient} bg-white/[0.02] p-5`}>
+        <div className={`bg-gradient-to-br ${gradient} bg-white/[0.02] p-6`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-black/30">
               {repo.avatar && (
@@ -201,9 +201,9 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
             </div>
           </div>
 
-          <div className="p-4 pt-3">
-            <h3 className="text-[15px] font-semibold text-white">How {repo.title} works — explained simply</h3>
-            <p className="text-[13px] text-zinc-400 mt-1 line-clamp-2">{summary.short}</p>
+          <div className="p-5 pt-4">
+            <h3 className="text-[16px] font-bold text-white group-hover:text-blue-400 transition-colors">How {repo.title} works — explained simply</h3>
+            <p className="text-[14px] text-zinc-400 mt-1 line-clamp-2">{summary.short}</p>
             <EngagementBar repo={repo} onRun={onRun} />
           </div>
         </div>
