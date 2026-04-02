@@ -215,13 +215,16 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
   };
 }
 
+const ENV_KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
-    result[key] = value;
+    if (!key || !ENV_KEY_REGEX.test(key)) continue;
+    result[key] = String(value);
   }
   for (const ref of options?.secretRefs || []) {
+    if (!ref || !ENV_KEY_REGEX.test(ref)) continue;
     const envName = `${SECRET_PREFIX}${ref.toUpperCase()}`;
     const value = process.env[envName];
     if (value) result[ref] = value;
@@ -784,7 +787,7 @@ async function executeJob(jobId: string) {
     await saveJobs();
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
-    const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
+    const clone = await runBinary("git", ["clone", "--depth", "1", "--", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
     if (!clone.ok) {
       throw new Error("Repository clone failed.");
     }
