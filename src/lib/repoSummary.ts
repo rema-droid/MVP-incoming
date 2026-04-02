@@ -124,11 +124,19 @@ function uniqNonEmpty(items: string[]): string[] {
 }
 
 /* ── Short summary (card-level) ── */
+const repoSummaryCache = new Map<string, RepoSummary>();
+
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
+
+  const cacheKey = combined;
+  const cached = repoSummaryCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
   const pills: string[] = [];
   const typeHints: string[] = [];
@@ -233,13 +241,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  if (repoSummaryCache.size < 1000) {
+    repoSummaryCache.set(cacheKey, result);
+  }
+
+  return result;
 }
+
+const friendlyCategoryCache = new Map<string, string>();
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
@@ -248,16 +264,26 @@ export function friendlyCategoryLabel(repo: RepoLike): string {
   const combined =
     `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+  const cached = friendlyCategoryCache.get(combined);
+  if (cached) {
+    return cached;
+  }
+
+  let result = "Community tool";
+  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) result = "Smart helper";
+  else if (/(react|next|vue|web|website|browser)/.test(combined)) result = "Website";
+  else if (/(api|server|backend)/.test(combined)) result = "Behind-the-scenes worker";
+  else if (/(data|analytics|chart)/.test(combined)) result = "Numbers and charts";
+  else if (/(game|play)/.test(combined)) result = "Fun stuff";
+  else if (/(cli|terminal|command)/.test(combined)) result = "Text-based tool";
+  else if (/(image|video|audio|media|design|creative)/.test(combined)) result = "Creative tool";
+  else if (/(security|auth|encryption|privacy)/.test(combined)) result = "Safety and privacy";
+  else if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) result = "Setup helper";
+
+  if (friendlyCategoryCache.size < 1000) {
+    friendlyCategoryCache.set(combined, result);
+  }
+  return result;
 }
 
 export type LongBeginnerStory = {
