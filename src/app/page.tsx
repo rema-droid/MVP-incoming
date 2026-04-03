@@ -143,6 +143,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
+  const [bookmarks, setBookmarks] = useState<Repo[]>([]);
   const [selectedFromTab, setSelectedFromTab] = useState<Tab>("discover");
   const [showAllRepos, setShowAllRepos] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -155,6 +156,7 @@ export default function Home() {
     try {
       const seen = localStorage.getItem("os-layer-onboarding-seen");
       setShowOnboarding(!seen);
+      setBookmarks(getLocalRepos("os-layer-bookmarks"));
     } catch {
       setShowOnboarding(false);
     }
@@ -307,6 +309,22 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function handleToggleSave(repo: Repo) {
+    const isBookmarked = bookmarks.some((r) => r.id === repo.id);
+    let updated;
+    if (isBookmarked) {
+      updated = bookmarks.filter((r) => r.id !== repo.id);
+    } else {
+      updated = [repo, ...bookmarks];
+    }
+    setBookmarks(updated);
+    localStorage.setItem("os-layer-bookmarks", JSON.stringify(updated));
+
+    if (activeTab === "bookmarks") {
+      setFeedRepos(updated);
+    }
+  }
+
   const isInSearchMode = searchQuery.trim().length > 0 && searchResults.length > 0;
   const displayRepos = isInSearchMode ? searchResults : feedRepos;
   const showFeed = activeTab !== "settings";
@@ -342,7 +360,15 @@ export default function Home() {
 
       <main className="flex h-[100dvh] bg-[#042a33] w-full flex-1 flex-col overflow-y-auto px-4 py-8 pb-32 sm:px-10 sm:py-10">
         {selectedRepo ? (
-          <RepoDetails key={selectedRepo.id} repo={selectedRepo} showShopActions={selectedFromTab === "shop"} onRun={handleRunRepo} onClose={() => setSelectedRepo(null)} />
+          <RepoDetails
+            key={selectedRepo.id}
+            repo={selectedRepo}
+            showShopActions={selectedFromTab === "shop"}
+            isSaved={bookmarks.some(r => r.id === selectedRepo.id)}
+            onToggleSave={handleToggleSave}
+            onRun={handleRunRepo}
+            onClose={() => setSelectedRepo(null)}
+          />
         ) : showFeed ? (
           <div className="mx-auto w-full max-w-[1000px] flex flex-col gap-10">
             

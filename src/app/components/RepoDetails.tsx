@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  Bookmark,
   Monitor,
   Star,
   Globe,
@@ -22,6 +23,8 @@ import { buildLongBeginnerStory, friendlyCategoryLabel } from "@/lib/repoSummary
 interface RepoDetailsProps {
   repo: Repo;
   showShopActions?: boolean;
+  isSaved?: boolean;
+  onToggleSave?: (repo: Repo) => void;
   onRun: (repo: Repo) => void;
   onClose: () => void;
 }
@@ -35,6 +38,8 @@ function formatLikes(n: number) {
 export default function RepoDetails({
   repo,
   showShopActions = false,
+  isSaved = false,
+  onToggleSave,
   onRun,
   onClose,
 }: RepoDetailsProps) {
@@ -182,6 +187,22 @@ export default function RepoDetails({
             >
               {showShopActions ? "GET" : "RUN"}
             </button>
+
+            {onToggleSave && (
+              <button
+                type="button"
+                onClick={() => onToggleSave(repo)}
+                className={`inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 transition-all active:scale-[0.95] ${
+                  isSaved
+                    ? "bg-white/10 text-blue-400 shadow-inner border-blue-500/20"
+                    : "bg-white/5 text-zinc-400 hover:bg-white/10"
+                }`}
+                aria-label={isSaved ? "Remove from saved" : "Save for later"}
+              >
+                <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+              </button>
+            )}
+
             {showShopActions ? (
               <span className="text-xs text-zinc-500">Opens the project page so you can see more</span>
             ) : (
