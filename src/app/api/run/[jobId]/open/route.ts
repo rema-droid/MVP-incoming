@@ -16,6 +16,9 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
   const headers = new Headers(request.headers);
   headers.delete("host");
   headers.delete("content-length");
+  // Sentinel: Strip sensitive headers to prevent credential leakage to untrusted runtimes
+  headers.delete("cookie");
+  headers.delete("authorization");
 
   const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
   const response = await fetch(upstream, {
@@ -28,6 +31,8 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
   const outHeaders = new Headers(response.headers);
   outHeaders.delete("content-encoding");
   outHeaders.delete("content-length");
+  // Sentinel: Strip set-cookie from upstream to prevent untrusted runtime from setting cookies on our domain
+  outHeaders.delete("set-cookie");
   outHeaders.set("x-os-layer-proxy", "run-cloud");
   return new NextResponse(response.body, { status: response.status, headers: outHeaders });
 }
