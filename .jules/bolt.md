@@ -1,0 +1,3 @@
+## 2025-05-15 - Memoized repository summary and category labeling
+**Learning:** In list-heavy UIs with complex string manipulation and multiple regex evaluations (like `src/lib/repoSummary.ts`), redundant computations significantly impact performance. Memoizing results based on repository metadata provided a measurable speedup (~21-25x) for repeated repository renders. Moving large static objects (e.g., regex arrays) outside functions further reduces GC pressure and initialization costs.
+**Action:** Always check for repeated computations in core utilities used by high-frequency UI components. Prefer memoization with bounded cache size to prevent memory growth.

@@ -1,5 +1,11 @@
+import 'dotenv/config';
 import { Redis } from 'ioredis';
-require('dotenv').config({ path: '../.env' });
+import path from 'path';
+import { config } from 'dotenv';
+
+// Ensure .env is loaded correctly regardless of where the script is called from
+config({ path: path.resolve(process.cwd(), '.env') });
+config({ path: path.resolve(process.cwd(), '../.env') });
 
 const redis = new Redis(process.env.REDIS_URL!);
 async function main() {
