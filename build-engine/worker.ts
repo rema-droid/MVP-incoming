@@ -56,12 +56,13 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Worker] Job ${repoId} failed:`, error);
+    const err = error as { stderr?: string; stdout?: string; message?: string };
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    const logDetails = err.stderr || err.stdout || err.message || String(error);
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
