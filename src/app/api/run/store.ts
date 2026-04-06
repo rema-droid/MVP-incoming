@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -195,10 +195,9 @@ function inferTemplate(runtime: RuntimeProfile) {
 }
 
 function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
+  return randomBytes(Math.ceil(length / 2))
+    .toString("hex")
+    .slice(0, length);
 }
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
@@ -784,7 +783,7 @@ async function executeJob(jobId: string) {
     await saveJobs();
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
-    const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
+    const clone = await runBinary("git", ["clone", "--depth", "1", "--", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
     if (!clone.ok) {
       throw new Error("Repository clone failed.");
     }
