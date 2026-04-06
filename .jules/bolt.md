@@ -1,0 +1,3 @@
+## 2025-05-15 - [Optimize repository summary with memoization and static allocation]
+**Learning:** In applications that render long lists of items derived from metadata (like repository cards), redundant calculations and object allocations in utility functions can create significant performance bottlenecks. Moving static arrays outside of functions prevents repeated allocation, and implementing a simple `Map`-based memoization for expensive string/regex operations provides a measurable speedup (especially when navigating or filtering lists).
+**Action:** Always check for static allocations inside frequently called functions and identify expensive pure computations that can be memoized using composite keys.
