@@ -25,12 +25,10 @@ function stripLangNames(text: string): string {
 }
 
 /* ── Replace jargon with normal words ── */
-function simplifyWords(text: string): string {
-  let t = normalizeText(text);
-  const swaps: Array<[RegExp, string]> = [
-    [/\bAPI\b/gi, "a way for apps to talk to each other"],
-    [/\bAPIs\b/gi, "ways for apps to talk to each other"],
-    [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
+const SWAPS: Array<[RegExp, string]> = [
+  [/\bAPI\b/gi, "a way for apps to talk to each other"],
+  [/\bAPIs\b/gi, "ways for apps to talk to each other"],
+  [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
     [/\bSDK\b/gi, "a starter kit for builders"],
     [/\bREST\b/gi, "a standard way apps share information"],
     [/\bGraphQL\b/gi, "a way to ask an app for exactly the information you want"],
@@ -102,10 +100,13 @@ function simplifyWords(text: string): string {
     [/\bterminal\b/gi, "a text-only screen where you type commands"],
     [/\bcommand line\b/gi, "a text-only screen where you type commands"],
     [/\bvariable\b/gi, "a named box that holds a value"],
-    [/\bfunction\b/gi, "a reusable set of instructions"],
-    [/\bclass\b/gi, "a template for creating things"],
-  ];
-  for (const [re, to] of swaps) t = t.replace(re, to);
+  [/\bfunction\b/gi, "a reusable set of instructions"],
+  [/\bclass\b/gi, "a template for creating things"],
+];
+
+function simplifyWords(text: string): string {
+  let t = normalizeText(text);
+  for (const [re, to] of SWAPS) t = t.replace(re, to);
   return t;
 }
 
@@ -123,8 +124,19 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+const categoryCache = new Map<string, string>();
+
+function getCacheKey(repo: RepoLike): string {
+  return `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${(repo.topics || []).join(",")}`;
+}
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const key = getCacheKey(repo);
+  const cached = summaryCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,16 +245,23 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  if (summaryCache.size < 1000) summaryCache.set(key, result);
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
+  const key = getCacheKey(repo);
+  const cached = categoryCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -257,7 +276,10 @@ export function friendlyCategoryLabel(repo: RepoLike): string {
   if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
   if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
   if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+
+  const result = "Community tool";
+  if (categoryCache.size < 1000) categoryCache.set(key, result);
+  return result;
 }
 
 export type LongBeginnerStory = {
