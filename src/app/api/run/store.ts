@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -195,10 +195,7 @@ function inferTemplate(runtime: RuntimeProfile) {
 }
 
 function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
+  return randomBytes(length).toString("hex").slice(0, length);
 }
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
@@ -217,8 +214,9 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
+  const validKey = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !validKey.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
@@ -237,7 +235,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +248,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
@@ -784,7 +782,7 @@ async function executeJob(jobId: string) {
     await saveJobs();
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
-    const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
+    const clone = await runBinary("git", ["clone", "--depth", "1", "--", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
     if (!clone.ok) {
       throw new Error("Repository clone failed.");
     }

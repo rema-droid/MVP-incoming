@@ -43,6 +43,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
     }
 
+    // Security check: only allow https URLs to prevent local file access or other protocol exploits
+    if (!repo.url.startsWith('https://')) {
+      return NextResponse.json({ error: 'Only HTTPS repository URLs are allowed' }, { status: 400 });
+    }
+
     // TODO: In a real implementation, we would clone the repo here and get the file list.
     // For now, we'll simulate it to test the runtime detection.
     const repoFiles = ['package.json', 'next.config.js', 'README.md'];
