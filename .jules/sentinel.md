@@ -1,0 +1,4 @@
+## 2025-05-14 - [Hardening Run Cloud Infrastructure]
+**Vulnerability:** Multiple security gaps in the repository running/proxying infrastructure: unvalidated repository URLs (allowing non-HTTPS), `git clone` argument injection, unvalidated environment variable keys, and sensitive header leakage in proxy routes.
+**Learning:** Infrastructure that dynamically clones repositories and proxies traffic to them requires strict boundary controls. Simple string concatenations or passthroughs of headers/arguments can lead to SSRF, command injection, or credential leakage.
+**Prevention:** Always use `--` to terminate options in CLI commands (like `git clone`), strictly validate all user-provided keys for environment variables, enforce HTTPS for external URLs, and explicitly strip sensitive headers (`cookie`, `authorization`, `set-cookie`) when proxying between untrusted runtimes.
