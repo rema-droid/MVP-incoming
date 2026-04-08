@@ -25,26 +25,31 @@ export const worker = new Worker('Run Cloud', async job => {
     // 1. Create Fly App (ignore if exists)
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
-      await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+      // Security: use quoted appName
+      await execAsync(`flyctl apps create '${appName}' --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
     // 2. Clone the repository
     const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    // Security: Escape the URL and tmpDir since they are used in a shell command, and use -- to prevent argument injection
+    const escapedUrl = `'${githubUrl.replace(/'/g, `'\\''`)}'`;
+    const escapedTmpDir = `'${tmpDir.replace(/'/g, `'\\''`)}'`;
+    await execAsync(`git clone --depth 1 -- ${escapedUrl} ${escapedTmpDir}`);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
     // fly deploy using nixpacks builder
-    const deployCmd = `flyctl deploy . --app ${appName} --nixpacks --ha=false`;
+    // Security: use quoted appName
+    const deployCmd = `flyctl deploy . --app '${appName}' --nixpacks --ha=false`;
     const { stdout, stderr } = await execAsync(deployCmd, { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
     console.log(stdout); 
     if (stderr) console.error(stderr);
 
     // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
+    await execAsync(`rm -rf ${escapedTmpDir}`);
 
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
@@ -56,12 +61,12 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    const logDetails = (error as { stderr?: string }).stderr || (error as { stdout?: string }).stdout || (error as Error).message || String(error);
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
