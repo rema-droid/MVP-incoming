@@ -62,11 +62,19 @@ function escapeSvg(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+const BACKDROP_CACHE = new Map<string, string>();
+const MAX_BACKDROP_CACHE_SIZE = 500;
+
 /* Backdrop SVG for widget cards — no external images, just a beautiful gradient */
 export function getRepoBackdrop(repo: Repo) {
-  const palette = getRepoPalette(repo);
   const label = friendlyCategoryLabel(repo);
   const topic = repo.topics?.find(Boolean)?.replace(/-/g, " ") || repo.owner || "Try it free";
+  const key = `${repo.language || ""}|${label}|${topic}|${repo.title}`;
+
+  const cached = BACKDROP_CACHE.get(key);
+  if (cached) return cached;
+
+  const palette = getRepoPalette(repo);
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
       <defs>
@@ -101,7 +109,15 @@ export function getRepoBackdrop(repo: Repo) {
       <text x="88" y="770" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" fill="rgba(255,255,255,0.80)">${escapeSvg(topic)}</text>
     </svg>
   `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+  if (BACKDROP_CACHE.size >= MAX_BACKDROP_CACHE_SIZE) {
+    const firstKey = BACKDROP_CACHE.keys().next().value;
+    if (firstKey !== undefined) BACKDROP_CACHE.delete(firstKey);
+  }
+  BACKDROP_CACHE.set(key, result);
+
+  return result;
 }
 
 export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
