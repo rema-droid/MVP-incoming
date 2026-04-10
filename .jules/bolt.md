@@ -1,0 +1,3 @@
+## 2026-04-10 - Memoization of Repository Summaries and Backdrop SVGs
+**Learning:** Repetitive rendering of repository cards in the Marketplace and Discover views was causing redundant regex-heavy string processing and SVG generation. Moving static data like jargon-swaps to module scope and implementing a simple Map-based LRU-like cache provides a measurable speedup.
+**Action:** Use Map-based caches with size limits (e.g., 1000 entries) for expensive pure functions that process repository metadata or generate assets like SVGs. Hoist static arrays/objects out of hot-path functions to avoid re-allocation.
