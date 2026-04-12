@@ -33,7 +33,7 @@ export const worker = new Worker('Run Cloud', async job => {
     // 2. Clone the repository
     const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    await execAsync(`git clone --depth 1 -- ${githubUrl} ${tmpDir}`);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
