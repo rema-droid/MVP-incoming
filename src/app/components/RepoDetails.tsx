@@ -126,7 +126,7 @@ export default function RepoDetails({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 hover:bg-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
             aria-label="Back"
           >
             <ChevronLeft className="h-6 w-6" strokeWidth={2.25} />
@@ -178,7 +178,7 @@ export default function RepoDetails({
                 }
                 onRun(repo);
               }}
-              className="inline-flex min-h-[48px] min-w-[140px] items-center justify-center rounded-full bg-blue-500 px-10 text-[17px] font-bold tracking-wide text-white shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 active:scale-[0.98]"
+              className="inline-flex min-h-[48px] min-w-[140px] items-center justify-center rounded-full bg-blue-500 px-10 text-[17px] font-bold tracking-wide text-white shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {showShopActions ? "GET" : "RUN"}
             </button>
@@ -357,7 +357,7 @@ export default function RepoDetails({
           </div>
           <button
             type="button"
-            className="mt-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-zinc-900/40 px-4 py-3 text-left text-zinc-300 hover:bg-zinc-900/70"
+            className="mt-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-zinc-900/40 px-4 py-3 text-left text-zinc-300 hover:bg-zinc-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
           >
             <span className="text-sm">See more from this maker</span>
             <ChevronRight className="h-5 w-5 text-zinc-500" />
