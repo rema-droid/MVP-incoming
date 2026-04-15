@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap } from "lucide-react";
+import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap, X } from "lucide-react";
 
 export type Tab = "discover" | "categories" | "shop" | "feed" | "runtime" | "trending" | "runnable" | "viewed" | "bookmarks" | "settings";
 
@@ -102,8 +102,18 @@ export default function Sidebar({
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-9 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus-visible:border-blue-500/50 focus-visible:bg-black/40 focus-visible:ring-2 focus-visible:ring-blue-500/20"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange && onSearchChange("")}
+              className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              aria-label="Clear search"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </form>
       </div>
 
@@ -118,7 +128,8 @@ export default function Sidebar({
               {isDivider && <div className="mx-2 my-3 border-t border-white/5" />}
               <button
                 onClick={() => onTabChange(item.id)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                aria-current={activeTab === item.id ? "page" : undefined}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                   activeTab === item.id
                     ? "bg-white/10 text-white"
                     : "text-zinc-400 hover:bg-white/5 hover:text-white"
