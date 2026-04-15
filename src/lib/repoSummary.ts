@@ -124,11 +124,18 @@ function uniqNonEmpty(items: string[]): string[] {
 }
 
 /* ── Short summary (card-level) ── */
+const summaryCache = new Map<string, RepoSummary>();
+
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
+
+  // Performance Optimization: Memoize complex summary logic
+  if (summaryCache.has(combined)) {
+    return summaryCache.get(combined)!;
+  }
 
   const pills: string[] = [];
   const typeHints: string[] = [];
@@ -233,12 +240,18 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Performance Optimization: Cache result and limit cache size
+  if (summaryCache.size >= 1000) summaryCache.clear();
+  summaryCache.set(combined, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
