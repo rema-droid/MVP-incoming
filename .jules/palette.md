@@ -1,0 +1,3 @@
+## 2025-05-15 - [Search input accessibility and UX improvements]
+**Learning:** All search inputs should have a 'Clear' button to improve usability, especially for long queries. Focus states should be restricted to `focus-visible` to prevent unnecessary outlines for mouse users while maintaining keyboard accessibility. Icon-only buttons (like 'Clear') require descriptive `aria-label` attributes.
+**Action:** Use a consistent 'Clear' button pattern with `aria-label="Clear search"`, `focus-visible` styles, and ensure input padding prevents text overlap. Use `aria-current="page"` for active navigation items to aid screen reader users.
