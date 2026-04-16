@@ -25,87 +25,88 @@ function stripLangNames(text: string): string {
 }
 
 /* ── Replace jargon with normal words ── */
+const SWAPS: Array<[RegExp, string]> = [
+  [/\bAPI\b/gi, "a way for apps to talk to each other"],
+  [/\bAPIs\b/gi, "ways for apps to talk to each other"],
+  [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
+  [/\bSDK\b/gi, "a starter kit for builders"],
+  [/\bREST\b/gi, "a standard way apps share information"],
+  [/\bGraphQL\b/gi, "a way to ask an app for exactly the information you want"],
+  [/\bframework\b/gi, "a ready-made starting point for building things"],
+  [/\bframeworks\b/gi, "ready-made starting points for building things"],
+  [/\blibrary\b/gi, "a toolbox of pre-made pieces"],
+  [/\blibraries\b/gi, "toolboxes of pre-made pieces"],
+  [/\bbackend\b/gi, "the behind-the-scenes part that you never see"],
+  [/\bfrontend\b/gi, "the part you actually see and click on"],
+  [/\bdeployment\b/gi, "putting something online so people can use it"],
+  [/\bdeploy\b/gi, "put online"],
+  [/\brepository\b/gi, "project folder"],
+  [/\brepo\b/gi, "project"],
+  [/\bopen.?source\b/gi, "free software anyone can look at and use"],
+  [/\bcontainer\b/gi, "a neat package that has everything the app needs"],
+  [/\bcontainers\b/gi, "neat packages that have everything the app needs"],
+  [/\bdocker\b/gi, "a tool that packages apps so they run the same everywhere"],
+  [/\bkubernetes\b/gi, "a manager that keeps many apps running smoothly"],
+  [/\bmicroservices?\b/gi, "small separate apps that work together like a team"],
+  [/\bcomponent\b/gi, "a building block"],
+  [/\bcomponents\b/gi, "building blocks"],
+  [/\bconfiguration\b/gi, "settings"],
+  [/\bauthentication\b/gi, "the step where you prove who you are (like a password)"],
+  [/\bauth\b/gi, "login"],
+  [/\bencryption\b/gi, "a lock that scrambles your data so only you can read it"],
+  [/\bJWT\b/gi, "a digital pass that proves you logged in"],
+  [/\bmiddleware\b/gi, "a helper that runs between steps"],
+  [/\bplugin\b/gi, "an add-on that gives extra powers"],
+  [/\bplugins\b/gi, "add-ons that give extra powers"],
+  [/\bwebhook\b/gi, "an automatic message sent when something happens"],
+  [/\bwebsocket\b/gi, "a live two-way chat line between your screen and a server"],
+  [/\bcaching\b/gi, "remembering things so they load faster next time"],
+  [/\bcache\b/gi, "a memory that stores things to speed them up"],
+  [/\bCI\/CD\b/gi, "automatic testing and publishing"],
+  [/\bpipeline\b/gi, "a set of steps that happen one after another automatically"],
+  [/\bbuild\b/gi, "put together"],
+  [/\bcompile\b/gi, "translate into something a computer understands"],
+  [/\bruntime\b/gi, "the engine that makes the app actually work"],
+  [/\bscalable\b/gi, "able to handle more people without breaking"],
+  [/\bscaling\b/gi, "handling more people without breaking"],
+  [/\bmodular\b/gi, "made of separate pieces you can swap in and out"],
+  [/\brefactor\b/gi, "clean up and reorganize"],
+  [/\bbug\b/gi, "a mistake in the instructions that causes problems"],
+  [/\bbugs\b/gi, "mistakes in the instructions that cause problems"],
+  [/\bdebug(ging)?\b/gi, "finding and fixing mistakes"],
+  [/\bserver\b/gi, "a computer that runs day and night to serve you information"],
+  [/\bservers\b/gi, "computers that run day and night to serve information"],
+  [/\bdatabase\b/gi, "a filing cabinet where information is stored neatly"],
+  [/\bdatabases\b/gi, "filing cabinets where information is stored neatly"],
+  [/\bquery\b/gi, "a question you ask the filing cabinet"],
+  [/\bqueries\b/gi, "questions you ask the filing cabinet"],
+  [/\bschema\b/gi, "a blueprint that describes how information is organized"],
+  [/\bdata\b/gi, "information"],
+  [/\bcloud\b/gi, "someone else's computer that you borrow over the internet"],
+  [/\bML\b/g, "machine learning (teaching a computer to learn patterns)"],
+  [/\bmachine learning\b/gi, "teaching a computer to learn patterns"],
+  [/\bAI\b/g, "a smart helper that can think and learn"],
+  [/\bartificial intelligence\b/gi, "a smart helper that can think and learn"],
+  [/\bLLM\b/gi, "a smart helper that reads and writes like a person"],
+  [/\bneural network\b/gi, "a brain-like structure inside a computer"],
+  [/\bmodel\b/gi, "a trained brain that the computer uses to make decisions"],
+  [/\btoken\b/gi, "a tiny piece of text the computer reads one at a time"],
+  [/\btokens\b/gi, "tiny pieces of text the computer reads one at a time"],
+  [/\balgorithm\b/gi, "a recipe of steps a computer follows"],
+  [/\bpackage manager\b/gi, "a tool that downloads and organizes add-ons for you"],
+  [/\bdependencies\b/gi, "other tools this one needs to work"],
+  [/\bdependency\b/gi, "another tool this one needs to work"],
+  [/\bmonorepo\b/gi, "one big folder that holds many projects together"],
+  [/\bterminal\b/gi, "a text-only screen where you type commands"],
+  [/\bcommand line\b/gi, "a text-only screen where you type commands"],
+  [/\bvariable\b/gi, "a named box that holds a value"],
+  [/\bfunction\b/gi, "a reusable set of instructions"],
+  [/\bclass\b/gi, "a template for creating things"],
+];
+
 function simplifyWords(text: string): string {
   let t = normalizeText(text);
-  const swaps: Array<[RegExp, string]> = [
-    [/\bAPI\b/gi, "a way for apps to talk to each other"],
-    [/\bAPIs\b/gi, "ways for apps to talk to each other"],
-    [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
-    [/\bSDK\b/gi, "a starter kit for builders"],
-    [/\bREST\b/gi, "a standard way apps share information"],
-    [/\bGraphQL\b/gi, "a way to ask an app for exactly the information you want"],
-    [/\bframework\b/gi, "a ready-made starting point for building things"],
-    [/\bframeworks\b/gi, "ready-made starting points for building things"],
-    [/\blibrary\b/gi, "a toolbox of pre-made pieces"],
-    [/\blibraries\b/gi, "toolboxes of pre-made pieces"],
-    [/\bbackend\b/gi, "the behind-the-scenes part that you never see"],
-    [/\bfrontend\b/gi, "the part you actually see and click on"],
-    [/\bdeployment\b/gi, "putting something online so people can use it"],
-    [/\bdeploy\b/gi, "put online"],
-    [/\brepository\b/gi, "project folder"],
-    [/\brepo\b/gi, "project"],
-    [/\bopen.?source\b/gi, "free software anyone can look at and use"],
-    [/\bcontainer\b/gi, "a neat package that has everything the app needs"],
-    [/\bcontainers\b/gi, "neat packages that have everything the app needs"],
-    [/\bdocker\b/gi, "a tool that packages apps so they run the same everywhere"],
-    [/\bkubernetes\b/gi, "a manager that keeps many apps running smoothly"],
-    [/\bmicroservices?\b/gi, "small separate apps that work together like a team"],
-    [/\bcomponent\b/gi, "a building block"],
-    [/\bcomponents\b/gi, "building blocks"],
-    [/\bconfiguration\b/gi, "settings"],
-    [/\bauthentication\b/gi, "the step where you prove who you are (like a password)"],
-    [/\bauth\b/gi, "login"],
-    [/\bencryption\b/gi, "a lock that scrambles your data so only you can read it"],
-    [/\bJWT\b/gi, "a digital pass that proves you logged in"],
-    [/\bmiddleware\b/gi, "a helper that runs between steps"],
-    [/\bplugin\b/gi, "an add-on that gives extra powers"],
-    [/\bplugins\b/gi, "add-ons that give extra powers"],
-    [/\bwebhook\b/gi, "an automatic message sent when something happens"],
-    [/\bwebsocket\b/gi, "a live two-way chat line between your screen and a server"],
-    [/\bcaching\b/gi, "remembering things so they load faster next time"],
-    [/\bcache\b/gi, "a memory that stores things to speed them up"],
-    [/\bCI\/CD\b/gi, "automatic testing and publishing"],
-    [/\bpipeline\b/gi, "a set of steps that happen one after another automatically"],
-    [/\bbuild\b/gi, "put together"],
-    [/\bcompile\b/gi, "translate into something a computer understands"],
-    [/\bruntime\b/gi, "the engine that makes the app actually work"],
-    [/\bscalable\b/gi, "able to handle more people without breaking"],
-    [/\bscaling\b/gi, "handling more people without breaking"],
-    [/\bmodular\b/gi, "made of separate pieces you can swap in and out"],
-    [/\brefactor\b/gi, "clean up and reorganize"],
-    [/\bbug\b/gi, "a mistake in the instructions that causes problems"],
-    [/\bbugs\b/gi, "mistakes in the instructions that cause problems"],
-    [/\bdebug(ging)?\b/gi, "finding and fixing mistakes"],
-    [/\bserver\b/gi, "a computer that runs day and night to serve you information"],
-    [/\bservers\b/gi, "computers that run day and night to serve information"],
-    [/\bdatabase\b/gi, "a filing cabinet where information is stored neatly"],
-    [/\bdatabases\b/gi, "filing cabinets where information is stored neatly"],
-    [/\bquery\b/gi, "a question you ask the filing cabinet"],
-    [/\bqueries\b/gi, "questions you ask the filing cabinet"],
-    [/\bschema\b/gi, "a blueprint that describes how information is organized"],
-    [/\bdata\b/gi, "information"],
-    [/\bcloud\b/gi, "someone else's computer that you borrow over the internet"],
-    [/\bML\b/g, "machine learning (teaching a computer to learn patterns)"],
-    [/\bmachine learning\b/gi, "teaching a computer to learn patterns"],
-    [/\bAI\b/g, "a smart helper that can think and learn"],
-    [/\bartificial intelligence\b/gi, "a smart helper that can think and learn"],
-    [/\bLLM\b/gi, "a smart helper that reads and writes like a person"],
-    [/\bneural network\b/gi, "a brain-like structure inside a computer"],
-    [/\bmodel\b/gi, "a trained brain that the computer uses to make decisions"],
-    [/\btoken\b/gi, "a tiny piece of text the computer reads one at a time"],
-    [/\btokens\b/gi, "tiny pieces of text the computer reads one at a time"],
-    [/\balgorithm\b/gi, "a recipe of steps a computer follows"],
-    [/\bpackage manager\b/gi, "a tool that downloads and organizes add-ons for you"],
-    [/\bdependencies\b/gi, "other tools this one needs to work"],
-    [/\bdependency\b/gi, "another tool this one needs to work"],
-    [/\bmonorepo\b/gi, "one big folder that holds many projects together"],
-    [/\bterminal\b/gi, "a text-only screen where you type commands"],
-    [/\bcommand line\b/gi, "a text-only screen where you type commands"],
-    [/\bvariable\b/gi, "a named box that holds a value"],
-    [/\bfunction\b/gi, "a reusable set of instructions"],
-    [/\bclass\b/gi, "a template for creating things"],
-  ];
-  for (const [re, to] of swaps) t = t.replace(re, to);
+  for (const [re, to] of SWAPS) t = t.replace(re, to);
   return t;
 }
 
@@ -123,8 +124,19 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+const labelCache = new Map<string, string>();
+
+function getRepoCacheKey(repo: RepoLike): string {
+  return `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${(repo.topics || []).sort().join(",")}`;
+}
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const key = getRepoCacheKey(repo);
+  const cached = summaryCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,31 +245,41 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  if (summaryCache.size < 1000) summaryCache.set(key, result);
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
+  const key = getRepoCacheKey(repo);
+  const cached = labelCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+  let res = "Community tool";
+  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) res = "Smart helper";
+  else if (/(react|next|vue|web|website|browser)/.test(combined)) res = "Website";
+  else if (/(api|server|backend)/.test(combined)) res = "Behind-the-scenes worker";
+  else if (/(data|analytics|chart)/.test(combined)) res = "Numbers and charts";
+  else if (/(game|play)/.test(combined)) res = "Fun stuff";
+  else if (/(cli|terminal|command)/.test(combined)) res = "Text-based tool";
+  else if (/(image|video|audio|media|design|creative)/.test(combined)) res = "Creative tool";
+  else if (/(security|auth|encryption|privacy)/.test(combined)) res = "Safety and privacy";
+  else if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) res = "Setup helper";
+
+  if (labelCache.size < 1000) labelCache.set(key, res);
+  return res;
 }
 
 export type LongBeginnerStory = {
