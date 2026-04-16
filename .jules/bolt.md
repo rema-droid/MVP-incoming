@@ -1,0 +1,3 @@
+## 2025-05-14 - Optimization of Repository Summaries and SVG Generation
+**Learning:** Re-allocating large arrays of objects and regular expressions inside frequently-called functions (like `simplifyWords`) creates significant garbage collection pressure and CPU overhead. Additionally, generating and encoding complex SVG data URIs on every render is a bottleneck for UI responsiveness.
+**Action:** Always hoist static configuration (like regex maps) to the module level. Use size-limited `Map` caches for expensive string transformations and visual asset generation to achieve multi-magnitude speedups for repeated data.
