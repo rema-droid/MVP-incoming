@@ -25,10 +25,8 @@ function stripLangNames(text: string): string {
 }
 
 /* ── Replace jargon with normal words ── */
-function simplifyWords(text: string): string {
-  let t = normalizeText(text);
-  const swaps: Array<[RegExp, string]> = [
-    [/\bAPI\b/gi, "a way for apps to talk to each other"],
+const SWAPS: Array<[RegExp, string]> = [
+  [/\bAPI\b/gi, "a way for apps to talk to each other"],
     [/\bAPIs\b/gi, "ways for apps to talk to each other"],
     [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
     [/\bSDK\b/gi, "a starter kit for builders"],
@@ -103,9 +101,12 @@ function simplifyWords(text: string): string {
     [/\bcommand line\b/gi, "a text-only screen where you type commands"],
     [/\bvariable\b/gi, "a named box that holds a value"],
     [/\bfunction\b/gi, "a reusable set of instructions"],
-    [/\bclass\b/gi, "a template for creating things"],
-  ];
-  for (const [re, to] of swaps) t = t.replace(re, to);
+  [/\bclass\b/gi, "a template for creating things"],
+];
+
+function simplifyWords(text: string): string {
+  let t = normalizeText(text);
+  for (const [re, to] of SWAPS) t = t.replace(re, to);
   return t;
 }
 
@@ -123,8 +124,29 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+const categoryCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 1000;
+
+function getRepoKey(repo: RepoLike): string {
+  const topics = repo.topics ? [...repo.topics].sort().join(",") : "";
+  return `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${topics}`;
+}
+
+function addToCache<T>(cache: Map<string, T>, key: string, value: T) {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
+  }
+  cache.set(key, value);
+}
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const key = getRepoKey(repo);
+  const cached = summaryCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,31 +255,50 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+  addToCache(summaryCache, key, result);
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
+  const key = getRepoKey(repo);
+  const cached = categoryCache.get(key);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
-  const combined =
-    `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
+  const combined = `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+  let res = "Community tool";
+
+  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) {
+    res = "Smart helper";
+  } else if (/(react|next|vue|web|website|browser)/.test(combined)) {
+    res = "Website";
+  } else if (/(api|server|backend)/.test(combined)) {
+    res = "Behind-the-scenes worker";
+  } else if (/(data|analytics|chart)/.test(combined)) {
+    res = "Numbers and charts";
+  } else if (/(game|play)/.test(combined)) {
+    res = "Fun stuff";
+  } else if (/(cli|terminal|command)/.test(combined)) {
+    res = "Text-based tool";
+  } else if (/(image|video|audio|media|design|creative)/.test(combined)) {
+    res = "Creative tool";
+  } else if (/(security|auth|encryption|privacy)/.test(combined)) {
+    res = "Safety and privacy";
+  } else if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) {
+    res = "Setup helper";
+  }
+
+  addToCache(categoryCache, key, res);
+  return res;
 }
 
 export type LongBeginnerStory = {
