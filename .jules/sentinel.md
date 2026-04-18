@@ -1,0 +1,4 @@
+## 2025-05-14 - [Command and Argument Injection in Build Engine]
+**Vulnerability:** Command injection was possible in `build-engine/worker.ts` because repository URLs and IDs were passed directly into shell-interpreted strings via `child_process.exec`. Additionally, `git clone` was vulnerable to argument injection from malicious URLs starting with a hyphen.
+**Learning:** Using template literals with `exec` is a major risk. Even with standard CLI tools like `git`, special care is needed for inputs that could be interpreted as flags.
+**Prevention:** Always use `child_process.spawn` with an arguments array to avoid shell interpretation. Use the `--` separator for CLI commands like `git clone` to signify the end of options. Strictly sanitize identifiers used in file paths or app names to allow only safe characters (alphanumeric and hyphens).
