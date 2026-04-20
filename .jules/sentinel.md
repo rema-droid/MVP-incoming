@@ -1,0 +1,4 @@
+## 2025-05-14 - Securing CLI interactions and input validation in build-engine
+**Vulnerability:** The build engine was using `child_process.exec` which is vulnerable to command injection if user-provided strings (like repository URLs) are concatenated into the command. Additionally, `repoId` was not sanitized before being used in file system paths.
+**Learning:** Shell execution (`exec`) is inherently risky when dealing with untrusted input. Using `spawn` with an arguments array is a much safer alternative as it bypasses shell interpretation. Sanitizing identifiers used in paths is also crucial to prevent path traversal.
+**Prevention:** Always use `spawn` with an arguments array for CLI interactions. Sanitize all user-provided strings used in file system paths or shell commands. Enforce safe protocols (like `https://`) at the API entry point. Use the `--` separator for git commands to prevent argument injection.
