@@ -16,6 +16,7 @@ import {
   Clock,
   Flame,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { type Repo, getRepoBackdrop } from "./RepoCard";
 import { summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -376,14 +377,26 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
         {/* Search & Sort/Filter Row */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
+            <label htmlFor="market-search" className="sr-only">Search marketplace</label>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
+              id="market-search"
               type="text"
               value={marketSearch}
               onChange={(e) => setMarketSearch(e.target.value)}
               placeholder="Search marketplace..."
-              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
             />
+            {marketSearch && (
+              <button
+                type="button"
+                onClick={() => setMarketSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}

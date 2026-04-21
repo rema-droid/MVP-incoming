@@ -1,0 +1,3 @@
+## 2025-05-14 - Enhancing Search and Navigation Accessibility
+**Learning:** Search inputs often lack explicit labels and a quick way to clear text, which hinders both accessibility (for screen readers) and general usability (for mouse users). Additionally, navigation components frequently miss standard ARIA attributes to indicate the current active state.
+**Action:** Always provide an associated `<label>` (using `sr-only` if visually hidden) for search inputs. Include a "Clear" button that appears when the input is not empty. Apply `aria-current="page"` to the active item in navigation lists to ensure clarity for assistive technologies.
