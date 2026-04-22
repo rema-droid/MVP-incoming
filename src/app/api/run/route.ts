@@ -43,6 +43,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
     }
 
+    // Strict URL validation: must be https and contain no shell metacharacters or whitespace
+    const urlPattern = /^https:\/\/[a-zA-Z0-9._\-\/]+$/;
+    if (!urlPattern.test(repo.url)) {
+      return NextResponse.json({ error: 'Invalid repository URL' }, { status: 400 });
+    }
+
     // TODO: In a real implementation, we would clone the repo here and get the file list.
     // For now, we'll simulate it to test the runtime detection.
     const repoFiles = ['package.json', 'next.config.js', 'README.md'];
