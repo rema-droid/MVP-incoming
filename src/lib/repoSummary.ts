@@ -6,11 +6,20 @@ export type RepoSummary = {
 };
 
 type RepoLike = {
+  id?: number;
   plainEnglishDescription?: string;
   language?: string;
   topics?: string[];
   title?: string;
 };
+
+const MAX_CACHE_SIZE = 1000;
+const summarizeCache = new Map<string, RepoSummary>();
+
+function getSummarizeCacheKey(repo: RepoLike): string {
+  if (repo.id !== undefined) return `id:${repo.id}`;
+  return `${repo.title || ""}|${repo.language || ""}|${(repo.topics || []).join(",")}|${repo.plainEnglishDescription || ""}`;
+}
 
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
@@ -125,6 +134,10 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const cacheKey = getSummarizeCacheKey(repo);
+  const cached = summarizeCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,12 +246,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // FIFO eviction
+  if (summarizeCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summarizeCache.keys().next().value;
+    if (firstKey !== undefined) summarizeCache.delete(firstKey);
+  }
+  summarizeCache.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
