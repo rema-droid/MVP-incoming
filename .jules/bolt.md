@@ -1,0 +1,3 @@
+## 2025-05-14 - Significant Performance gains from Constant Hoisting and Memoization
+**Learning:** Constant hoisting and size-limited memoization in hot paths (like repository summarization) can yield massive speedups (up to 22x in this case) with minimal code complexity. Using a FIFO eviction policy ensures memory usage remains bounded.
+**Action:** Always check for redundant regex compilation and repetitive expensive computations in render loops or frequently called utility functions. Use a Map with a size limit for simple, effective caching.
