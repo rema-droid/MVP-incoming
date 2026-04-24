@@ -784,7 +784,9 @@ async function executeJob(jobId: string) {
     await saveJobs();
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
-    const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
+    // Security: Use -- separator to ensure job.repo.url is treated as a positional argument,
+    // preventing argument injection (e.g., if a URL starts with a hyphen).
+    const clone = await runBinary("git", ["clone", "--depth", "1", "--", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
     if (!clone.ok) {
       throw new Error("Repository clone failed.");
     }
