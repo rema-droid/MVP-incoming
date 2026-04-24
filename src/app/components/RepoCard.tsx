@@ -62,8 +62,29 @@ function escapeSvg(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+const BACKDROP_CACHE = new Map<string, string>();
+const MAX_BACKDROP_CACHE_SIZE = 1000;
+
+function getBackdropCacheKey(repo: Repo): string {
+  // Use id if available, otherwise fallback to content-based key
+  if (repo.id !== undefined) return `id:${repo.id}`;
+  return `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${(repo.topics || []).join(",")}|${repo.owner || ""}`;
+}
+
+function addToBackdropCache(key: string, value: string) {
+  if (BACKDROP_CACHE.size >= MAX_BACKDROP_CACHE_SIZE) {
+    const firstKey = BACKDROP_CACHE.keys().next().value;
+    if (firstKey !== undefined) BACKDROP_CACHE.delete(firstKey);
+  }
+  BACKDROP_CACHE.set(key, value);
+}
+
 /* Backdrop SVG for widget cards — no external images, just a beautiful gradient */
 export function getRepoBackdrop(repo: Repo) {
+  const cacheKey = getBackdropCacheKey(repo);
+  const cached = BACKDROP_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const palette = getRepoPalette(repo);
   const label = friendlyCategoryLabel(repo);
   const topic = repo.topics?.find(Boolean)?.replace(/-/g, " ") || repo.owner || "Try it free";
@@ -101,7 +122,9 @@ export function getRepoBackdrop(repo: Repo) {
       <text x="88" y="770" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" fill="rgba(255,255,255,0.80)">${escapeSvg(topic)}</text>
     </svg>
   `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  const res = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  addToBackdropCache(cacheKey, res);
+  return res;
 }
 
 export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
