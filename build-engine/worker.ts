@@ -1,10 +1,25 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
+import { rm } from 'fs/promises';
 
-const execAsync = promisify(exec);
+async function run(command: string, args: string[], options: { env?: Record<string, string | undefined>; cwd?: string } = {}) {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const proc = spawn(command, args, {
+      ...options,
+      shell: false,
+    });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout?.on('data', data => stdout += data);
+    proc.stderr?.on('data', data => stderr += data);
+    proc.on('close', code => {
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`Command failed with code ${code}: ${stderr}`));
+    });
+  });
+}
 
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
@@ -14,8 +29,10 @@ export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
-  const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+  // Sanitize repoId to prevent path traversal and command injection
+  const rawRepoId = String(job.data.repoId || job.data.id || 'unknown');
+  const repoId = rawRepoId.replace(/[^a-zA-Z0-9-]/g, '');
+  const appName = `gitmurph-${repoId.toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -25,26 +42,26 @@ export const worker = new Worker('Run Cloud', async job => {
     // 1. Create Fly App (ignore if exists)
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
-      await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+      await run('flyctl', ['apps', 'create', appName, '--machines', '--org', 'personal'], { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
     // 2. Clone the repository
     const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    // Use -- to ensure githubUrl is treated as a positional argument
+    await run('git', ['clone', '--depth', '1', '--', githubUrl, tmpDir]);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
     // fly deploy using nixpacks builder
-    const deployCmd = `flyctl deploy . --app ${appName} --nixpacks --ha=false`;
-    const { stdout, stderr } = await execAsync(deployCmd, { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+    const { stdout, stderr } = await run('flyctl', ['deploy', '.', '--app', appName, '--nixpacks', '--ha=false'], { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
     console.log(stdout); 
     if (stderr) console.error(stderr);
 
     // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
+    await rm(tmpDir, { recursive: true, force: true });
 
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
@@ -56,12 +73,18 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
-    console.error(`[Worker] Job ${repoId} failed:`, error);
+  } catch (err: unknown) {
+    console.error(`[Worker] Job ${repoId} failed:`, err);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    let logDetails = 'Unknown error';
+    if (err instanceof Error) {
+      const error = err as Error & { stderr?: string; stdout?: string };
+      logDetails = error.stderr || error.stdout || error.message;
+    } else {
+      logDetails = String(err);
+    }
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
