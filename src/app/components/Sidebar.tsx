@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap } from "lucide-react";
+import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap, X } from "lucide-react";
 
 export type Tab = "discover" | "categories" | "shop" | "feed" | "runtime" | "trending" | "runnable" | "viewed" | "bookmarks" | "settings";
 
@@ -102,8 +102,18 @@ export default function Sidebar({
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-8 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange?.("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-zinc-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </form>
       </div>
 
