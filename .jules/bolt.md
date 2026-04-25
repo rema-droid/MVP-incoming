@@ -1,0 +1,3 @@
+## 2025-04-25 - Caching repository summary logic and SVG generation
+**Learning:** Significant performance gains can be achieved by memoizing pure string-processing functions (like regex-based jargon replacement and category labeling) and SVG data URI generation, especially when these functions are called frequently in list renders. Hoisting constant arrays/regexes out of hot functions further reduces allocation overhead.
+**Action:** Always check for redundant computations in render loops or data transformation layers. Implement size-limited caches for expensive operations with predictable inputs.
