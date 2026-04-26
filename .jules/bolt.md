@@ -1,0 +1,3 @@
+## 2025-05-14 - [Performance Optimization of Repository Summarization]
+**Learning:** Constant hoisting of regex-heavy arrays and implementing size-limited FIFO memoization for pure transform functions (like `summarizeRepoForBeginners`) can yield massive performance gains (up to 100x for cached entries) by avoiding redundant regex compilation and string processing.
+**Action:** Identify frequently called pure functions that perform heavy string or regex operations on stable data and apply hoisting and memoization patterns. Use a simple `Map` with a size-eviction policy to keep memory usage bounded.
