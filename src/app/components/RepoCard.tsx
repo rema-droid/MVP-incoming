@@ -1,3 +1,4 @@
+import React from "react";
 import Image from "next/image";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -62,8 +63,16 @@ function escapeSvg(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+/* ── PERF: Caching for backdrop SVGs ── */
+const backdropCache = new Map<string, string>();
+const BACKDROP_CACHE_LIMIT = 200;
+
 /* Backdrop SVG for widget cards — no external images, just a beautiful gradient */
 export function getRepoBackdrop(repo: Repo) {
+  const cacheKey = `id:${repo.id}||title:${repo.title}||desc:${repo.plainEnglishDescription}||lang:${repo.language}||topics:${(repo.topics || []).join(",")}||owner:${repo.owner || ""}`;
+  const cached = backdropCache.get(cacheKey);
+  if (cached) return cached;
+
   const palette = getRepoPalette(repo);
   const label = friendlyCategoryLabel(repo);
   const topic = repo.topics?.find(Boolean)?.replace(/-/g, " ") || repo.owner || "Try it free";
@@ -101,10 +110,17 @@ export function getRepoBackdrop(repo: Repo) {
       <text x="88" y="770" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" fill="rgba(255,255,255,0.80)">${escapeSvg(topic)}</text>
     </svg>
   `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+  if (backdropCache.size >= BACKDROP_CACHE_LIMIT) {
+    const firstKey = backdropCache.keys().next().value;
+    if (firstKey !== undefined) backdropCache.delete(firstKey);
+  }
+  backdropCache.set(cacheKey, result);
+  return result;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+const RepoCard = React.memo(function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
   const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
   const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
   const backdrop = getRepoBackdrop(repo);
@@ -306,4 +322,6 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
       </div>
     </article>
   );
-}
+});
+
+export default RepoCard;
