@@ -1,0 +1,4 @@
+## 2026-04-29 - Harden Command Execution and Identifier Sanitization
+**Vulnerability:** Potential command injection and argument injection in build and runtime execution paths due to shell-interpolated execution and unsanitized identifiers.
+**Learning:** Using `shell: true` or `exec` with string interpolation of semi-trusted identifiers (like `repoId` or `job.id`) exposes the system to command injection. Even positional arguments in commands like `git clone` can be exploited via argument injection (e.g., URLs starting with `-`).
+**Prevention:** Always use array-based `spawn` with `shell: false` to prevent shell interpretation. Strictly sanitize all identifiers used in commands or file paths using regex (e.g., `/[^a-zA-Z0-9-]/g`). Use the `--` separator for positional arguments to prevent argument injection.
