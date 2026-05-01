@@ -1,0 +1,3 @@
+## 2025-05-15 - [Search Accessibility & Interaction]
+**Learning:** All search inputs should have visually hidden labels (`sr-only`) for screen readers and a conditional 'Clear' button using the 'X' icon from 'lucide-react' for better micro-UX. In compact or dark layouts like the Sidebar, absolute positioned buttons need `z-10` to ensure they remain interactable and don't get covered by the input's focus ring or other layers.
+**Action:** Always include `sr-only` labels and a `z-10` clear button for search inputs. Use padding-right (e.g., `pr-10`) on the input to prevent text from overlapping with the clear icon.
