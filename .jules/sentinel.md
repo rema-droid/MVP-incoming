@@ -1,0 +1,4 @@
+## 2025-05-15 - Command and Argument Injection in Build Engine
+**Vulnerability:** The build engine worker used `child_process.exec` to run `git clone` and `flyctl` commands using unsanitized user-provided repository URLs and IDs. This allowed for command injection (via shell metacharacters in the URL) and argument injection (via URLs starting with dashes).
+**Learning:** Using `exec` with user-controlled strings is inherently dangerous as it spawns a shell. `git clone` is specifically vulnerable to argument injection if the URL is not separated by `--`.
+**Prevention:** Always use `child_process.spawn` with `shell: false` to execute external commands. Use the `--` separator for `git` commands to distinguish arguments from positional inputs. Sanitize all identifiers used in file paths or commands using strict alphanumeric regex.
