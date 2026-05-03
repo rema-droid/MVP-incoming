@@ -6,11 +6,30 @@ export type RepoSummary = {
 };
 
 type RepoLike = {
+  id?: number;
   plainEnglishDescription?: string;
   language?: string;
   topics?: string[];
   title?: string;
+  stars?: number;
 };
+
+const CACHE_LIMIT = 500;
+
+/** FIFO eviction to prevent memory leaks */
+function enforceCacheLimit(cache: Map<string, unknown>) {
+  if (cache.size >= CACHE_LIMIT) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) {
+      cache.delete(firstKey);
+    }
+  }
+}
+
+function getSummarizeCacheKey(repo: RepoLike): string {
+  if (repo.id) return `id:${repo.id}`;
+  return `title:${repo.title || ""}||lang:${repo.language || ""}||topics:${(repo.topics || []).join(",")}||desc:${repo.plainEnglishDescription || ""}||stars:${repo.stars || 0}`;
+}
 
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
@@ -123,8 +142,18 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summarizeCache = new Map<string, unknown>();
+const labelCache = new Map<string, string>();
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const cacheKey = getSummarizeCacheKey(repo);
+  const cached = summarizeCache.get(cacheKey) as RepoSummary | undefined;
+  if (cached) {
+    // Return a shallow clone to prevent cache poisoning if the consumer mutates goodForPills
+    return { ...cached, goodForPills: [...cached.goodForPills] };
+  }
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,31 +262,44 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result: RepoSummary = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  enforceCacheLimit(summarizeCache);
+  summarizeCache.set(cacheKey, result);
+
+  return { ...result, goodForPills: [...result.goodForPills] };
 }
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
+  const cacheKey = getSummarizeCacheKey(repo);
+  const cached = labelCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+  let label = "Community tool";
+  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) label = "Smart helper";
+  else if (/(react|next|vue|web|website|browser)/.test(combined)) label = "Website";
+  else if (/(api|server|backend)/.test(combined)) label = "Behind-the-scenes worker";
+  else if (/(data|analytics|chart)/.test(combined)) label = "Numbers and charts";
+  else if (/(game|play)/.test(combined)) label = "Fun stuff";
+  else if (/(cli|terminal|command)/.test(combined)) label = "Text-based tool";
+  else if (/(image|video|audio|media|design|creative)/.test(combined)) label = "Creative tool";
+  else if (/(security|auth|encryption|privacy)/.test(combined)) label = "Safety and privacy";
+  else if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) label = "Setup helper";
+
+  enforceCacheLimit(labelCache);
+  labelCache.set(cacheKey, label);
+  return label;
 }
 
 export type LongBeginnerStory = {
