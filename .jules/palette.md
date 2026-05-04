@@ -1,0 +1,3 @@
+## 2025-05-14 - Standardized Search Input Pattern
+**Learning:** Standardizing search inputs with clear labels, a 'Clear' button, and consistent focus states significantly improves accessibility and usability. Using `sr-only` for labels ensures screen readers can identify the field, while a 'Clear' button provides a quick way for users to reset their search, especially on mobile or compact layouts.
+**Action:** Always implement search inputs with a visually hidden label, a conditional 'Clear' button (`X` icon, `aria-label="Clear search"`), and consistent `focus-visible` styles. For sidebars, ensure `z-10` on the button and `pr-10` on the input to avoid overlap.
