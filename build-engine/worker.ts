@@ -1,10 +1,51 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
 
-const execAsync = promisify(exec);
+/**
+ * Security: Safe subprocess execution using spawn with shell: false.
+ * Prevents command injection by passing arguments as an array.
+ */
+async function run(
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: Record<string, string | undefined> } = {}
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      ...options,
+      shell: false,
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        const error = new Error(`Command failed: ${command} ${args.join(' ')}`);
+        (error as any).stdout = stdout;
+        (error as any).stderr = stderr;
+        (error as any).code = code;
+        reject(error);
+      }
+    });
+
+    child.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
 
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
@@ -14,8 +55,19 @@ export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
+
+  // Security: Validate repository URL to mitigate SSRF and command injection risks.
+  const urlRegex = /^https:\/\/[a-zA-Z0-9._\-\/@#+:]+$/;
+  if (!githubUrl || !urlRegex.test(githubUrl)) {
+    throw new Error(`Invalid repository URL: ${githubUrl}`);
+  }
+
   const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+
+  // Security: Sanitize repoId for OS-level names (Fly app names, directory paths).
+  // Use original repoId for Redis keys to maintain consistency.
+  const safeRepoId = repoId.toString().replace(/[^a-zA-Z0-9-]/g, '');
+  const appName = `gitmurph-${safeRepoId.toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -25,26 +77,28 @@ export const worker = new Worker('Run Cloud', async job => {
     // 1. Create Fly App (ignore if exists)
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
-      await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+      await run('flyctl', ['apps', 'create', appName, '--machines', '--org', 'personal'], { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
     } catch (e) {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
     // 2. Clone the repository
-    const tmpDir = `./tmp-${repoId}-${Date.now()}`;
+    const tmpDir = `./tmp-${safeRepoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    // Security: Use -- separator to prevent argument injection attacks.
+    await run('git', ['clone', '--depth', '1', '--', githubUrl, tmpDir]);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
     // fly deploy using nixpacks builder
-    const deployCmd = `flyctl deploy . --app ${appName} --nixpacks --ha=false`;
-    const { stdout, stderr } = await execAsync(deployCmd, { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    console.log(stdout); 
+    const { stdout, stderr } = await run('flyctl', ['deploy', '.', '--app', appName, '--nixpacks', '--ha=false'], { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+    console.log(stdout);
     if (stderr) console.error(stderr);
 
     // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
+    // Security: Use fs.rm instead of rm -rf shell command for safer directory cleanup.
+    const { promises: fs } = await import('fs');
+    await fs.rm(tmpDir, { recursive: true, force: true });
 
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
