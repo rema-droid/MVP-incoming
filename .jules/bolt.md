@@ -1,0 +1,3 @@
+## 2025-05-15 - Optimizing Repo Summaries and Component Rendering
+**Learning:** Large mapping arrays and regexes inside frequently called functions (like those used in list rendering) cause significant GC pressure and CPU overhead due to re-allocation and re-compilation. Caching the results of these purely functional transformations is highly effective.
+**Action:** Always hoist constants and regexes out of functions. Implement FIFO caching for expensive data transformations. Wrap list item components in `React.memo` to prevent redundant re-renders during high-frequency parent state updates (e.g., polling).
