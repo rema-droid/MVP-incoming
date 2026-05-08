@@ -323,10 +323,10 @@ export default function Home() {
     : activeTab === "bookmarks" ? "Saved"
     : "Recently Viewed";
 
-  const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
-  const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
-  const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
+  const heroRepos = useMemo(() => (!isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : []), [isInSearchMode, activeTab, feedRepos]);
+  const listRepos = useMemo(() => (activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos), [activeTab, isInSearchMode, feedRepos, displayRepos]);
+  const visibleRepos = useMemo(() => (showAllRepos ? listRepos : listRepos.slice(0, 32)), [showAllRepos, listRepos]);
+  const categorizedGroups = useMemo(() => groupReposByCategory(displayRepos), [displayRepos]);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
   const canShowSeeAll = listRepos.length > 32;
 
