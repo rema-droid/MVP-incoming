@@ -1,0 +1,3 @@
+## 2025-05-15 - [Memoizing Repo Summary Logic]
+**Learning:** Hoisting large arrays of RegExp (like `JARGON_SWAPS`) and implementing a simple FIFO cache for pure functions with complex logic can significantly reduce latency and CPU cycles. In this codebase, `summarizeRepoForBeginners` was a bottleneck due to repeated regex execution and string transformations on every render pass.
+**Action:** Always check if frequently called formatting or transformation helpers in the `lib/` directory can be memoized or if they are re-allocating large objects unnecessarily. Use a FIFO strategy to prevent unbounded memory growth in long-running sessions.
