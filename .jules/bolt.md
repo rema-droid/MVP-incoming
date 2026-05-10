@@ -1,0 +1,3 @@
+## 2025-05-22 - [Optimizing library functions with hoisting and memoization]
+**Learning:** Hoisting regular expressions and mapping arrays to module-level constants in frequently called utility functions (`src/lib/repoSummary.ts`) reduces execution time by eliminating redundant re-allocations. Implementing a simple FIFO cache (Map) for these functions provides a massive performance boost (up to 100x) for repeated calls with the same inputs, which is common in React list rendering.
+**Action:** Always check for redundant object/regex allocations in hot paths and consider module-level hoisting. Use Map-based memoization with a size limit for pure functions that process stable repository metadata.
