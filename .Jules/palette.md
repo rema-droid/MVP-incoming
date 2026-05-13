@@ -1,0 +1,3 @@
+## 2025-05-15 - Standardizing Search UX and Navigation Accessibility
+**Learning:** Standardizing search components across desktop and mobile improves cognitive load for users. Using `sr-only` labels ensures accessibility for screen readers while maintaining visual design. Restoring visual focus with `focus-visible` ring utilities is critical when overriding default browser outlines.
+**Action:** Always pair `outline-none` with `focus-visible:ring-*` and ensure hidden labels for icon-only or placeholder-driven inputs. Verify `sr-only` content using class matching in Playwright instead of visibility checks.
