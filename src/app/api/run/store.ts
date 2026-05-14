@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
+import { sanitizeRepoId } from "../../../lib/security";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
 // These are only used when REDIS_URL is explicitly set in the environment.
@@ -450,7 +451,8 @@ async function provisionInfraServices(job: StoredRunJob) {
     throw new Error("Infra services require docker executor.");
   }
 
-  const networkName = `oslayer-net-${job.id.slice(0, 12)}`;
+  const safeId = sanitizeRepoId(job.id);
+  const networkName = `oslayer-net-${safeId.slice(0, 12)}`;
   await runShell(`docker network create ${networkName}`, DATA_ROOT, job, 20000);
   job.infraNetwork = networkName;
 
@@ -458,7 +460,7 @@ async function provisionInfraServices(job: StoredRunJob) {
     const user = "oslayer";
     const password = randomToken(24);
     const database = "app";
-    const containerName = `oslayer-pg-${job.id.slice(0, 10)}`;
+    const containerName = `oslayer-pg-${safeId.slice(0, 10)}`;
     const hostPort = choosePort() + 1000;
     const pgCommand = [
       "docker run -d",
@@ -488,7 +490,7 @@ async function provisionInfraServices(job: StoredRunJob) {
 
   if (services.redis) {
     const password = randomToken(20);
-    const containerName = `oslayer-redis-${job.id.slice(0, 10)}`;
+    const containerName = `oslayer-redis-${safeId.slice(0, 10)}`;
     const hostPort = choosePort() + 2000;
     const redisCommand = [
       "docker run -d",
@@ -784,7 +786,7 @@ async function executeJob(jobId: string) {
     await saveJobs();
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
-    const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
+    const clone = await runBinary("git", ["clone", "--depth", "1", "--", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
     if (!clone.ok) {
       throw new Error("Repository clone failed.");
     }
