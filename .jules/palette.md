@@ -1,0 +1,3 @@
+## 2025-05-15 - Standardized Search Accessibility and Navigation
+**Learning:** Screen readers require explicit label-input association even when placeholders are present. Standardizing search interaction with a 'Clear' button improves UX significantly, especially on mobile. Using `aria-current="page"` on navigation items is a simple but effective way to improve screen reader navigation.
+**Action:** Always include `<label className="sr-only">` for search inputs and ensure they are linked via `id` and `htmlFor`. Provide a clear button for search inputs to allow easy reset. Use `aria-current` for active navigation states.
