@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
   Search,
   Play,
@@ -115,7 +115,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 /* ── Marketplace Card ── */
-function MarketplaceCard({
+const MarketplaceCard = memo(function MarketplaceCard({
   repo,
   badge,
   onView,
@@ -214,7 +214,7 @@ function MarketplaceCard({
       </div>
     </article>
   );
-}
+});
 
 /* ── Main MarketplaceView ── */
 export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }: MarketplaceViewProps) {
