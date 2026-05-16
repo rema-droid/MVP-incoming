@@ -20,14 +20,46 @@ function normalizeText(input: string): string {
 const LANG_RE =
   /\b(Python|JavaScript|TypeScript|Rust|Go|Golang|C\+\+|C#|Java|Ruby|PHP|Swift|Kotlin|Scala|Perl|Haskell|Elixir|Dart|Lua|R|Julia|Zig|Nim|OCaml|Clojure|Erlang)\b/gi;
 
-function stripLangNames(text: string): string {
-  return text.replace(LANG_RE, "").replace(/\s{2,}/g, " ").trim();
+const RE_FRONTEND = /(next|react|vue|angular|svelte|tailwind|css|ui|frontend)/;
+const RE_BACKEND = /(api|server|backend|graphql|microservice|rest)/;
+const RE_CLI = /(cli|command tool|terminal|command-line|tool)/;
+const RE_PYTHON = /(python|django|flask|fastapi)/;
+const RE_RUST = /(rust)/;
+const RE_DATA = /(data|analytics|pandas|spark|ml|model|dataset)/;
+const RE_SECURITY = /(auth|login|oauth|jwt|security|encryption)/;
+const RE_DOCKER = /(docker|container)/;
+const RE_AI = /(ai|llm|gpt|agent|neural|transformer|langchain|chat)/;
+const RE_GAME = /(game|play|fun)/;
+const RE_CREATIVE = /(image|video|audio|media|design|editor|creative)/;
+
+const RE_AI_CAT = /(ai|llm|chat|gpt|assistant|agent)/;
+const RE_FRONTEND_CAT = /(react|next|vue|web|website|browser)/;
+const RE_BACKEND_CAT = /(api|server|backend)/;
+const RE_DATA_CAT = /(data|analytics|chart)/;
+const RE_GAME_CAT = /(game|play)/;
+const RE_CLI_CAT = /(cli|terminal|command)/;
+const RE_CREATIVE_CAT = /(image|video|audio|media|design|creative)/;
+const RE_SECURITY_CAT = /(security|auth|encryption|privacy)/;
+const RE_INFRA_CAT = /(docker|kubernetes|cloud|devops|infra)/;
+
+
+const SUMMARIZE_CACHE = new Map<string, RepoSummary>();
+const CACHE_LIMIT = 500;
+
+function enforceCacheLimit(cache: Map<string, unknown>) {
+  if (cache.size >= CACHE_LIMIT) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) {
+      cache.delete(firstKey);
+    }
+  }
 }
 
-/* ── Replace jargon with normal words ── */
-function simplifyWords(text: string): string {
-  let t = normalizeText(text);
-  const swaps: Array<[RegExp, string]> = [
+function getSummarizeCacheKey(repo: RepoLike): string {
+  return `${repo.title || ""} ${repo.language || ""} ${(repo.topics || []).join(",")} ${repo.plainEnglishDescription || ""}`;
+}
+
+const JARGON_SWAPS: Array<[RegExp, string]> = [
     [/\bAPI\b/gi, "a way for apps to talk to each other"],
     [/\bAPIs\b/gi, "ways for apps to talk to each other"],
     [/\bCLI\b/gi, "a tool you use by typing words instead of clicking"],
@@ -105,7 +137,16 @@ function simplifyWords(text: string): string {
     [/\bfunction\b/gi, "a reusable set of instructions"],
     [/\bclass\b/gi, "a template for creating things"],
   ];
-  for (const [re, to] of swaps) t = t.replace(re, to);
+
+function stripLangNames(text: string): string {
+  return text.replace(LANG_RE, "").replace(/\s{2,}/g, " ").trim();
+}
+
+/* ── Replace jargon with normal words ── */
+function simplifyWords(text: string): string {
+  let t = normalizeText(text);
+
+  for (const [re, to] of JARGON_SWAPS) t = t.replace(re, to);
   return t;
 }
 
@@ -125,6 +166,17 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const cacheKey = getSummarizeCacheKey(repo);
+  const cached = SUMMARIZE_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const result = summarizeRepoForBeginnersInternal(repo);
+  enforceCacheLimit(SUMMARIZE_CACHE);
+  SUMMARIZE_CACHE.set(cacheKey, result);
+  return result;
+}
+
+function summarizeRepoForBeginnersInternal(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -133,53 +185,53 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const pills: string[] = [];
   const typeHints: string[] = [];
 
-  if (/(next|react|vue|angular|svelte|tailwind|css|ui|frontend)/.test(combined)) {
+  if (RE_FRONTEND.test(combined)) {
     typeHints.push("Website you can visit");
     pills.push("Opens in your browser like any normal website");
   }
 
-  if (/(api|server|backend|graphql|microservice|rest)/.test(combined)) {
+  if (RE_BACKEND.test(combined)) {
     typeHints.push("Behind-the-scenes helper");
     pills.push("Works quietly in the background so other apps can do their job");
   }
 
-  if (/(cli|command tool|terminal|command-line|tool)/.test(combined)) {
+  if (RE_CLI.test(combined)) {
     typeHints.push("Text-based helper");
     pills.push("You tell it what to do by typing — no clicking needed");
   }
 
-  if (/(python|django|flask|fastapi)/.test(combined)) {
+  if (RE_PYTHON.test(combined)) {
     pills.push("Popular with people who work with numbers and small handy tools");
   }
 
-  if (/(rust)/.test(combined)) {
+  if (RE_RUST.test(combined)) {
     pills.push("Made to be really fast and really safe — like a sports car with extra seat belts");
   }
 
-  if (/(data|analytics|pandas|spark|ml|model|dataset)/.test(combined)) {
+  if (RE_DATA.test(combined)) {
     typeHints.push("Information explorer");
     pills.push("Helps you look at numbers, charts, and patterns to understand things better");
   }
 
-  if (/(auth|login|oauth|jwt|security|encryption)/.test(combined)) {
+  if (RE_SECURITY.test(combined)) {
     pills.push("Keeps your passwords, accounts, and private stuff safe");
   }
 
-  if (/(docker|container)/.test(combined)) {
+  if (RE_DOCKER.test(combined)) {
     pills.push("Packages everything neatly so you can start with one tap — no fuss");
   }
 
-  if (/(ai|llm|gpt|agent|neural|transformer|langchain|chat)/.test(combined)) {
+  if (RE_AI.test(combined)) {
     typeHints.push("Smart helper");
     pills.push("Uses a computer brain to answer questions or do tasks for you");
   }
 
-  if (/(game|play|fun)/.test(combined)) {
+  if (RE_GAME.test(combined)) {
     typeHints.push("Fun and games");
     pills.push("Something you play or have fun with — just for the joy of it");
   }
 
-  if (/(image|video|audio|media|design|editor|creative)/.test(combined)) {
+  if (RE_CREATIVE.test(combined)) {
     typeHints.push("Creative tool");
     pills.push("Helps you make, edit, or enjoy pictures, videos, or sounds");
   }
@@ -248,15 +300,15 @@ export function friendlyCategoryLabel(repo: RepoLike): string {
   const combined =
     `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
+  if (RE_AI_CAT.test(combined)) return "Smart helper";
+  if (RE_FRONTEND_CAT.test(combined)) return "Website";
+  if (RE_BACKEND_CAT.test(combined)) return "Behind-the-scenes worker";
+  if (RE_DATA_CAT.test(combined)) return "Numbers and charts";
+  if (RE_GAME_CAT.test(combined)) return "Fun stuff";
+  if (RE_CLI_CAT.test(combined)) return "Text-based tool";
+  if (RE_CREATIVE_CAT.test(combined)) return "Creative tool";
+  if (RE_SECURITY_CAT.test(combined)) return "Safety and privacy";
+  if (RE_INFRA_CAT.test(combined)) return "Setup helper";
   return "Community tool";
 }
 
