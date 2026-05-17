@@ -1,3 +1,6 @@
+"use client";
+
+import React, { useMemo } from "react";
 import Image from "next/image";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -104,13 +107,18 @@ export function getRepoBackdrop(repo: Repo) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
-  const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
-  const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
-  const eyebrow = friendlyCategoryLabel(repo);
-  const summary = summarizeRepoForBeginners(repo);
+function RepoCardComponent({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+  const { priceLabel, backdrop, palette, eyebrow, summary } = useMemo(() => {
+    const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
+    const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
+    return {
+      priceLabel,
+      backdrop: getRepoBackdrop(repo),
+      palette: getRepoPalette(repo),
+      eyebrow: friendlyCategoryLabel(repo),
+      summary: summarizeRepoForBeginners(repo),
+    };
+  }, [repo]);
 
   if (variant === "widget") {
     return (
@@ -307,3 +315,6 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
     </article>
   );
 }
+
+export const RepoCard = React.memo(RepoCardComponent);
+export default RepoCard;
