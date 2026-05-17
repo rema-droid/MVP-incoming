@@ -1,0 +1,3 @@
+## 2025-05-14 - Standardizing Search UX and Navigation Accessibility
+**Learning:** Icon-only search inputs and active navigation links are common accessibility gaps. Adding visually hidden labels (`sr-only`) and `aria-current="page"` significantly improves the experience for screen reader users without altering the visual design. Furthermore, providing a "Clear search" button enhances the interaction loop for all users.
+**Action:** Always include `aria-current` for navigation components and ensure every input has a linked label (even if hidden). For search inputs, implement a standardized "Clear" pattern with proper `z-index` and padding to avoid overlapping the input text.
