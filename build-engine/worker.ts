@@ -3,6 +3,8 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { promises as fs } from 'fs';
+import { isValidRepoUrl, sanitizeRepoId } from '../src/lib/security';
 
 const execAsync = promisify(exec);
 
@@ -15,9 +17,19 @@ export const worker = new Worker('Run Cloud', async job => {
 
   const githubUrl = job.data.url || job.data.githubUrl;
   const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
 
-  console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
+  if (!isValidRepoUrl(githubUrl)) {
+    console.error(`[Worker] Invalid repository URL: ${githubUrl}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, `Invalid repository URL: ${githubUrl}`);
+    throw new Error(`Invalid repository URL: ${githubUrl}`);
+  }
+
+  const safeRepoId = sanitizeRepoId(repoId);
+  const appName = `gitmurph-${safeRepoId.toLowerCase()}`;
+  const tmpDir = `./tmp-${safeRepoId}-${Date.now()}`;
+
+  console.log(`[Worker] Starting build for ${safeRepoId} [${githubUrl}]...`);
 
   try {
     await redis.set(`repo:${repoId}:status`, 'building');
@@ -31,9 +43,9 @@ export const worker = new Worker('Run Cloud', async job => {
     }
 
     // 2. Clone the repository
-    const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    // Use -- to separate git options from the URL to prevent argument injection
+    await execAsync(`git clone --depth 1 -- ${githubUrl} ${tmpDir}`);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
@@ -44,7 +56,7 @@ export const worker = new Worker('Run Cloud', async job => {
     if (stderr) console.error(stderr);
 
     // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
+    await fs.rm(tmpDir, { recursive: true, force: true });
 
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
@@ -56,7 +68,8 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as { stderr?: string; stdout?: string; message?: string };
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
