@@ -29,6 +29,7 @@ export default function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
+              aria-current={isActive ? "page" : undefined}
               className="group flex flex-1 flex-col items-center justify-center gap-1"
             >
               <div
