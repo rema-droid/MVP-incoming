@@ -1,0 +1,3 @@
+## 2025-05-15 - Standardizing Search and Navigation Accessibility
+**Learning:** Standardized search inputs should always include a visually hidden label for screen readers and a 'Clear search' button for better UX. The clear button needs a `z-index` (e.g., `z-10`) to ensure it remains clickable over the input background, especially when using absolute positioning. Additionally, `aria-current="page"` is essential for indicating the active navigation state to assistive technologies.
+**Action:** Apply the `sr-only` label, `z-10` clear button, and `aria-current` pattern to all search and navigation components in the future.
