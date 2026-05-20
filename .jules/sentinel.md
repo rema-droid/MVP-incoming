@@ -1,0 +1,4 @@
+## 2025-05-15 - Command Injection in Build Engine Worker
+**Vulnerability:** The `build-engine/worker.ts` was using `child_process.exec` with unsanitized template strings to run `git clone`, `flyctl apps create`, and `flyctl deploy`. This allowed arbitrary command execution by providing a malicious repository URL or ID (e.g., `https://github.com/user/repo; rm -rf /`).
+**Learning:** Using `exec` with user-controlled input in template strings is inherently dangerous as it executes the command through a shell. Even if the input seems "internal", it might be sourced from user-provided repository metadata.
+**Prevention:** Always use `child_process.spawn` with an arguments array and `shell: false` for executing external commands with dynamic arguments. Implement strict input validation (regex for URLs, alphanumeric sanitization for IDs) as a defense-in-depth measure. Use native Node.js APIs (like `fs.promises.rm`) instead of shell commands where possible.
