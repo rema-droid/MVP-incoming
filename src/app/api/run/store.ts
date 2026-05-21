@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
+import { sanitizeRepoId } from "@/lib/security";
 import { promises as fs } from "fs";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
@@ -764,7 +765,8 @@ async function executeJob(jobId: string) {
   const job = state.jobs.get(jobId);
   if (!job) return;
 
-  const workspacePath = path.join(WORKSPACES_DIR, job.id);
+  const sanitizedId = sanitizeRepoId(job.id);
+  const workspacePath = path.join(WORKSPACES_DIR, sanitizedId);
   job.workspacePath = workspacePath;
   job.port = null;
   job.targetOrigin = null;
