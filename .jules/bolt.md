@@ -1,0 +1,3 @@
+## 2025-05-15 - Loop Refactoring vs. Caching
+**Learning:** Refactoring a chain of `if` statements with regex tests into a loop over an array of regex objects can actually introduce measurable overhead (~2x slower in my case) due to the overhead of iterating and accessing object properties in every iteration. Caching the result of the entire computation is far more effective for performance than micro-optimizing the branch logic.
+**Action:** Prioritize memoization/caching for idempotent string processing functions over refactoring branch logic for "cleanliness" if performance is the primary goal. Always measure both "clean" and "fast" versions.
