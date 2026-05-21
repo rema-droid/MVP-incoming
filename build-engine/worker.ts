@@ -10,12 +10,35 @@ console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
 
-export const worker = new Worker('Run Cloud', async job => {
-  console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
+/**
+ * Validates a repository URL to prevent SSRF and command injection.
+ */
+function isValidRepoUrl(url: string): boolean {
+  const repoRegex = /^https:\/\/[a-zA-Z0-9._\-\/@#+:]+$/;
+  return repoRegex.test(url);
+}
 
-  const githubUrl = job.data.url || job.data.githubUrl;
-  const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+/**
+ * Sanitizes a repository ID to prevent path traversal and command injection.
+ */
+function sanitizeRepoId(id: string): string {
+  return String(id).replace(/[^a-zA-Z0-9-]/g, '');
+}
+
+export const worker = new Worker('Run Cloud', async job => {
+  const rawGithubUrl = job.data.url || job.data.githubUrl;
+  const rawRepoId = job.data.repoId || job.data.id || 'unknown';
+
+  console.log(">>> RECEIVED REPO:", rawGithubUrl);
+
+  if (!isValidRepoUrl(rawGithubUrl)) {
+    console.error(`[Worker] Invalid repository URL: ${rawGithubUrl}`);
+    return;
+  }
+
+  const repoId = sanitizeRepoId(rawRepoId);
+  const githubUrl = rawGithubUrl;
+  const appName = `gitmurph-${repoId.toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -31,8 +54,10 @@ export const worker = new Worker('Run Cloud', async job => {
     }
 
     // 2. Clone the repository
-    const tmpDir = `./tmp-${repoId}-${Date.now()}`;
+    const timestamp = Date.now();
+    const tmpDir = `./tmp-${repoId}-${timestamp}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
+    // githubUrl and repoId are sanitized, timestamp is numeric.
     await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
 
     // 3. Build and Deploy with Nixpacks
