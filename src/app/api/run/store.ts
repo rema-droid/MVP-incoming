@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
+import { isValidRepoUrl, sanitizeRepoId } from "@/lib/security";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
 // These are only used when REDIS_URL is explicitly set in the environment.
@@ -342,7 +343,7 @@ async function runShell(command: string, cwd: string, job: StoredRunJob, timeout
     const proc = spawn(command, {
       cwd,
       shell: true,
-      env: { ...processEnv(), ...(extraEnv || {}) },
+      env: { ...processEnv(), ...job.injectedEnv, ...(extraEnv || {}) },
     });
 
     const timer = setTimeout(() => {
@@ -460,17 +461,29 @@ async function provisionInfraServices(job: StoredRunJob) {
     const database = "app";
     const containerName = `oslayer-pg-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 1000;
-    const pgCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${networkName}`,
-      `-e POSTGRES_USER=${user}`,
-      `-e POSTGRES_PASSWORD=${password}`,
-      `-e POSTGRES_DB=${database}`,
-      `-p ${hostPort}:5432`,
-      "postgres:16-alpine",
-    ].join(" ");
-    const ok = await runShell(pgCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+    const ok = await runBinary(
+      "docker",
+      [
+        "run",
+        "-d",
+        "--name",
+        containerName,
+        "--network",
+        networkName,
+        "-e",
+        `POSTGRES_USER=${user}`,
+        "-e",
+        `POSTGRES_PASSWORD=${password}`,
+        "-e",
+        `POSTGRES_DB=${database}`,
+        "-p",
+        `${hostPort}:5432`,
+        "postgres:16-alpine",
+      ],
+      DATA_ROOT,
+      job,
+      DOCKER_START_TIMEOUT_MS,
+    );
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.postgresUrl = `postgresql://${user}:${password}@${containerName}:5432/${database}`;
@@ -490,15 +503,26 @@ async function provisionInfraServices(job: StoredRunJob) {
     const password = randomToken(20);
     const containerName = `oslayer-redis-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 2000;
-    const redisCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${job.infraNetwork}`,
-      `-p ${hostPort}:6379`,
-      "redis:7-alpine",
-      `redis-server --requirepass ${password}`,
-    ].join(" ");
-    const ok = await runShell(redisCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+    const ok = await runBinary(
+      "docker",
+      [
+        "run",
+        "-d",
+        "--name",
+        containerName,
+        "--network",
+        job.infraNetwork!,
+        "-p",
+        `${hostPort}:6379`,
+        "redis:7-alpine",
+        "redis-server",
+        "--requirepass",
+        password,
+      ],
+      DATA_ROOT,
+      job,
+      DOCKER_START_TIMEOUT_MS,
+    );
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.redisUrl = `redis://:${password}@${containerName}:6379`;
@@ -782,6 +806,10 @@ async function executeJob(jobId: string) {
     await fs.rm(workspacePath, { recursive: true, force: true });
     await fs.mkdir(workspacePath, { recursive: true });
     await saveJobs();
+
+    if (!isValidRepoUrl(job.repo.url)) {
+      throw new Error("Invalid repository URL.");
+    }
 
     appendLog(job, `Cloning repository ${job.repo.url}`);
     const clone = await runBinary("git", ["clone", "--depth", "1", job.repo.url, workspacePath], DATA_ROOT, job, 3 * 60 * 1000);
