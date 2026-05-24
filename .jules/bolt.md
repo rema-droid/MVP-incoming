@@ -1,0 +1,3 @@
+## 2025-05-14 - FIFO Caching for Repo Summaries
+**Learning:** Repetitive string manipulation and regex-based classification (like in `summarizeRepoForBeginners`) can become a significant bottleneck when rendering large lists of items. Hoisting constant transformation arrays (like `JARGON_SWAPS`) outside function scopes prevents unnecessary re-allocations on every call.
+**Action:** Use a module-level Map-based cache for expensive pure functions that process data for the UI. Ensure the cache key includes all fields that affect the output, but exclude volatile data like star counts if they don't influence the transformation logic, to maximize cache hits.
