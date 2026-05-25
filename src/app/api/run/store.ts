@@ -338,10 +338,10 @@ async function runBinary(
 
 async function runShell(command: string, cwd: string, job: StoredRunJob, timeoutMs: number, extraEnv?: Record<string, string>) {
   return await new Promise<boolean>((resolve) => {
-    appendLog(job, `Running: ${command}`);
+    appendLog(job, `Running (shell): ${command}`);
     const proc = spawn(command, {
       cwd,
-      shell: true,
+      shell: "/bin/bash",
       env: { ...processEnv(), ...(extraEnv || {}) },
     });
 
@@ -377,6 +377,8 @@ function publicAppUrlFor(jobId: string) {
 }
 
 function shellEscape(value: string) {
+  // Use a more robust shell escape mechanism or avoid shell whenever possible.
+  // For now, ensuring it is at least wrapped in single quotes and single quotes are escaped.
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
@@ -460,17 +462,17 @@ async function provisionInfraServices(job: StoredRunJob) {
     const database = "app";
     const containerName = `oslayer-pg-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 1000;
-    const pgCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${networkName}`,
-      `-e POSTGRES_USER=${user}`,
-      `-e POSTGRES_PASSWORD=${password}`,
-      `-e POSTGRES_DB=${database}`,
-      `-p ${hostPort}:5432`,
+
+      const ok = (await runBinary("docker", [
+        "run", "-d",
+        "--name", containerName,
+        "--network", networkName,
+        "-e", `POSTGRES_USER=${user}`,
+        "-e", `POSTGRES_PASSWORD=${password}`,
+        "-e", `POSTGRES_DB=${database}`,
+        "-p", `${hostPort}:5432`,
       "postgres:16-alpine",
-    ].join(" ");
-    const ok = await runShell(pgCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+      ], DATA_ROOT, job, DOCKER_START_TIMEOUT_MS)).ok;
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.postgresUrl = `postgresql://${user}:${password}@${containerName}:5432/${database}`;
@@ -490,15 +492,15 @@ async function provisionInfraServices(job: StoredRunJob) {
     const password = randomToken(20);
     const containerName = `oslayer-redis-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 2000;
-    const redisCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${job.infraNetwork}`,
-      `-p ${hostPort}:6379`,
+
+      const ok = (await runBinary("docker", [
+        "run", "-d",
+        "--name", containerName,
+        "--network", job.infraNetwork!,
+        "-p", `${hostPort}:6379`,
       "redis:7-alpine",
-      `redis-server --requirepass ${password}`,
-    ].join(" ");
-    const ok = await runShell(redisCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+        "redis-server", "--requirepass", password,
+      ], DATA_ROOT, job, DOCKER_START_TIMEOUT_MS)).ok;
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.redisUrl = `redis://:${password}@${containerName}:6379`;
