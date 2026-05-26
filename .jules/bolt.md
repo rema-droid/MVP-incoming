@@ -1,0 +1,3 @@
+## 2025-05-15 - Cache Key Overhead and Regression
+**Learning:** Refactoring simple `if` chains into loops over objects (like `CATEGORY_MATCHERS`) can introduce a performance regression for extremely fast functions due to object iteration and regex property access. Additionally, constructing complex cache keys for these fast functions can sometimes outweigh the cost of the original computation.
+**Action:** Always benchmark before and after adding a cache for "micro-functions". If a regression occurs, ensure the cache is necessary for higher-level orchestration or optimize the cache key generation (e.g., using a pre-computed hash or smaller identifier).
