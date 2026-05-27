@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { detectRuntime } from '@/lib/runtimes';
 
+const isValidRepoUrl = (url: string) => {
+  return /^https:\/\/[a-zA-Z0-9._\-\/@#+:]+$/.test(url);
+};
+
 import { createRunJob, listRunJobs } from "./store";
 
 interface RunRequestBody {
@@ -41,6 +45,10 @@ export async function POST(request: Request) {
 
     if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    if (!isValidRepoUrl(repo.url)) {
+      return NextResponse.json({ error: 'Invalid repository URL' }, { status: 400 });
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
