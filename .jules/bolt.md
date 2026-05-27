@@ -1,0 +1,3 @@
+## 2025-05-14 - Caching overhead vs. Logic complexity
+**Learning:** Caching is not always a win. For simple functions like `friendlyCategoryLabel` which only performs regex tests on small strings, the overhead of generating a composite cache key (cloning, sorting, joining) and performing a `Map` lookup was measurable slower (~14ms vs ~20ms for 10k calls) than the original logic.
+**Action:** Always benchmark both the "before" and "after" for simple functions to ensure the caching overhead doesn't outweigh the benefits. Only apply caching to computationally expensive or frequently called complex logic.
