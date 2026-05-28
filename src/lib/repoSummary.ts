@@ -12,6 +12,9 @@ type RepoLike = {
   title?: string;
 };
 
+const summaryCache = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 500;
+
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
 }
@@ -125,10 +128,21 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const title = repo.title || "";
   const raw = repo.plainEnglishDescription || "";
-  const topicsText = (repo.topics || []).join(" ");
+  const topics = repo.topics || [];
+  const language = repo.language || "";
+
+  const cacheKey = `${title}|${raw}|${[...topics].sort().join(",")}|${language}`;
+  const cached = summaryCache.get(cacheKey);
+  if (cached) {
+    // Return a shallow clone to protect the cache from accidental mutation
+    return { ...cached, goodForPills: [...cached.goodForPills] };
+  }
+
+  const topicsText = topics.join(" ");
   const combined =
-    `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
+    `${title} ${raw} ${topicsText} ${language}`.toLowerCase();
 
   const pills: string[] = [];
   const typeHints: string[] = [];
@@ -233,12 +247,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Basic FIFO cache management
+  if (summaryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return { ...result, goodForPills: [...result.goodForPills] };
 }
 
 /** Friendly category label — never a programming language name. */
