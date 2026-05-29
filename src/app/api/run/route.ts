@@ -3,6 +3,20 @@ import { detectRuntime } from '@/lib/runtimes';
 
 import { createRunJob, listRunJobs } from "./store";
 
+/**
+ * Validates that a repository URL is an HTTPS URL and contains no shell metacharacters.
+ */
+export function isValidRepoUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    // Basic regex check to prevent shell injection or malformed URLs
+    return /^https:\/\/[a-zA-Z0-9._\-\/@#+:]+$/.test(url);
+  } catch {
+    return false;
+  }
+}
+
 interface RunRequestBody {
   repo?: {
     id: number;
@@ -41,6 +55,10 @@ export async function POST(request: Request) {
 
     if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    if (!isValidRepoUrl(repo.url)) {
+      return NextResponse.json({ error: 'Invalid repository URL' }, { status: 400 });
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.

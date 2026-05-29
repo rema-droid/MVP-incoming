@@ -10,7 +10,9 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
   }
 
   const incoming = new URL(request.url);
-  const upstreamPath = `/${(path || []).join("/")}`;
+  // Ensure the upstream path does not start with multiple slashes to prevent
+  // it from being interpreted as a protocol-relative URL by the URL constructor.
+  const upstreamPath = `/${(path || []).join("/")}`.replace(/\/+/g, "/");
   const upstream = new URL(upstreamPath, target.targetOrigin);
   upstream.search = incoming.search;
 
