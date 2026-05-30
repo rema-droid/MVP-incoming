@@ -123,8 +123,18 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 500;
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const cacheKey = `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${[...(repo.topics || [])].sort().join(",")}`;
+
+  const cached = summaryCache.get(cacheKey);
+  if (cached) {
+    return { ...cached, goodForPills: [...cached.goodForPills] };
+  }
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,12 +243,20 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  if (summaryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return { ...result, goodForPills: [...result.goodForPills] };
 }
 
 /** Friendly category label — never a programming language name. */
