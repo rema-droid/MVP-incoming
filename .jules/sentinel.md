@@ -1,0 +1,4 @@
+## 2025-05-14 - Command Injection in Build Engine
+**Vulnerability:** The build engine was using `child_process.exec` to run `git` and `flyctl` commands, interpolating user-provided repository URLs and application names directly into the shell command string. This allowed for arbitrary shell command execution via shell metacharacters (e.g., `;`, `&`, `|`).
+**Learning:** `exec` spawns a shell to run the provided string, making it susceptible to injection if inputs are not perfectly sanitized. Even with basic validation, shell parsing rules are complex and easily bypassed.
+**Prevention:** Always use `child_process.spawn` with an arguments array instead of `exec` for running external binaries with user-controlled input. This treats arguments as data rather than shell instructions, bypassing the shell entirely.
