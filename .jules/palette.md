@@ -1,0 +1,3 @@
+## 2025-05-15 - Clearable Search Pattern
+**Learning:** In a search-heavy interface like GITMURPH, providing a quick way to clear the search query via a dedicated button is a significant UX win. Returning focus to the search input immediately after clearing ensures a seamless experience for both mouse and keyboard users, preventing unnecessary clicks or navigation steps. Using `pr-9` to `pr-10` padding on the input ensures the text doesn't overlap the clear button.
+**Action:** Always implement a "Clear" button in search inputs that uses a `ref` to restore focus and provides an `aria-label` for screen reader users.
