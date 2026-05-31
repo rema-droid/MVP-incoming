@@ -160,14 +160,14 @@ export default function Home() {
     }
   }, []);
 
-  function dismissOnboarding() {
+  const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
     try {
       localStorage.setItem("os-layer-onboarding-seen", "1");
     } catch {
       // ignore
     }
-  }
+  }, []);
 
   useEffect(() => {
     setSelectedRepo(null); 
@@ -228,7 +228,7 @@ export default function Home() {
     fetchFeed();
   }, [activeTab]);
 
-  async function handleSearch(e: FormEvent) {
+  const handleSearch = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
@@ -250,7 +250,7 @@ export default function Home() {
     } finally {
       setIsSearching(false);
     }
-  }
+  }, [activeTab, searchQuery]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -279,14 +279,14 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [activeTab, fetchRunJobs]);
 
-  function handleRepoView(repo: Repo) {
+  const handleRepoView = useCallback((repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedFromTab(activeTab);
     setSelectedRepo(repo);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab]);
 
-  async function handleRunRepo(repo: Repo) {
+  const handleRunRepo = useCallback(async (repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedRepo(null);
     setSelectedFromTab(activeTab);
@@ -305,30 +305,32 @@ export default function Home() {
       setIsRunQueueLoading(false);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab, fetchRunJobs]);
 
-  const isInSearchMode = searchQuery.trim().length > 0 && searchResults.length > 0;
-  const displayRepos = isInSearchMode ? searchResults : feedRepos;
+  const isInSearchMode = useMemo(() => searchQuery.trim().length > 0 && searchResults.length > 0, [searchQuery, searchResults]);
+  const displayRepos = useMemo(() => isInSearchMode ? searchResults : feedRepos, [isInSearchMode, searchResults, feedRepos]);
   const showFeed = activeTab !== "settings";
 
-  const pageTitle = isInSearchMode 
-    ? "Search Results" 
-    : activeTab === "discover" ? "Explore"
-    : activeTab === "categories" ? "Types"
-    : activeTab === "shop" ? "Marketplace"
-    : activeTab === "feed" ? "Feed"
-    : activeTab === "runtime" ? "Try Apps"
-    : activeTab === "trending" ? "Popular now"
-    : activeTab === "runnable" ? "Easy to Run"
-    : activeTab === "bookmarks" ? "Saved"
-    : "Recently Viewed";
+  const pageTitle = useMemo(() => {
+    return isInSearchMode
+      ? "Search Results"
+      : activeTab === "discover" ? "Explore"
+      : activeTab === "categories" ? "Types"
+      : activeTab === "shop" ? "Marketplace"
+      : activeTab === "feed" ? "Feed"
+      : activeTab === "runtime" ? "Try Apps"
+      : activeTab === "trending" ? "Popular now"
+      : activeTab === "runnable" ? "Easy to Run"
+      : activeTab === "bookmarks" ? "Saved"
+      : "Recently Viewed";
+  }, [isInSearchMode, activeTab]);
 
-  const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
-  const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
-  const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
+  const heroRepos = useMemo(() => !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [], [isInSearchMode, activeTab, feedRepos]);
+  const listRepos = useMemo(() => activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos, [activeTab, isInSearchMode, feedRepos, displayRepos]);
+  const visibleRepos = useMemo(() => showAllRepos ? listRepos : listRepos.slice(0, 32), [showAllRepos, listRepos]);
+  const categorizedGroups = useMemo(() => groupReposByCategory(displayRepos), [displayRepos]);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
-  const canShowSeeAll = listRepos.length > 32;
+  const canShowSeeAll = useMemo(() => listRepos.length > 32, [listRepos]);
 
   return (
     <>
