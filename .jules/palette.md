@@ -1,0 +1,3 @@
+## 2025-05-15 - Clear Search Focus and Spacing Pattern
+**Learning:** Clear-search buttons ('X' icons) in search inputs should be absolutely positioned and only visible when a query exists. Using `useRef` to restore focus to the input immediately after clearing ensures optimal keyboard and screen-reader accessibility. Additionally, adding specific right padding (e.g., `pr-9`) to the input is necessary to prevent long search queries from overlapping with the absolute-positioned clear button.
+**Action:** Apply the `useRef` focus restoration and `pr-9` padding pattern for all future clearable input implementations to maintain high accessibility and visual polish.
