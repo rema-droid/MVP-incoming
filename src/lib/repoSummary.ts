@@ -5,6 +5,9 @@ export type RepoSummary = {
   goodForPills: string[];
 };
 
+const summaryCache = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 500;
+
 type RepoLike = {
   plainEnglishDescription?: string;
   language?: string;
@@ -125,6 +128,11 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  // Performance optimization: Cache the result of this relatively expensive function
+  const cacheKey = `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${[...(repo.topics || [])].sort().join(",")}`;
+  const cached = summaryCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,12 +241,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Keep cache size bounded
+  if (summaryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
