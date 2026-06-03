@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Image from "next/image";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -104,7 +105,7 @@ export function getRepoBackdrop(repo: Repo) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+const RepoCard = memo(({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) => {
   const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
   const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
   const backdrop = getRepoBackdrop(repo);
@@ -306,4 +307,8 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
       </div>
     </article>
   );
-}
+});
+
+RepoCard.displayName = "RepoCard";
+
+export default RepoCard;
