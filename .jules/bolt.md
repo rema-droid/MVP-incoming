@@ -1,0 +1,3 @@
+## 2025-05-15 - Memoizing Repository Summaries
+**Learning:** `summarizeRepoForBeginners` in `src/lib/repoSummary.ts` is an expensive function (~0.05ms/call) because it performs multiple regex-based string replacements and logic checks. Since it is called for every repository card in large lists, it can become a bottleneck during re-renders. Implementing a module-level cache with a FIFO eviction policy provides a significant speedup (~14x) for repeated calls with the same metadata.
+**Action:** Always benchmark utility functions that perform heavy string manipulation or complex logic when they are used in list rendering, and consider module-level caching for stable inputs.

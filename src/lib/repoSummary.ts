@@ -12,6 +12,13 @@ type RepoLike = {
   title?: string;
 };
 
+/**
+ * BOLT OPTIMIZATION: Cache for repository summaries to prevent redundant processing
+ * of jargon-heavy descriptions and logic-based type hints.
+ */
+const summaryCache = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 500;
+
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
 }
@@ -125,6 +132,13 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  // Generate a stable cache key based on the fields that affect the output.
+  // We sort the topics to ensure that different orders of the same topics result in the same key.
+  const cacheKey = `${repo.title || ""}|${repo.plainEnglishDescription || ""}|${repo.language || ""}|${[...(repo.topics || [])].sort().join(",")}`;
+
+  const cached = summaryCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,12 +247,20 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  if (summaryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
