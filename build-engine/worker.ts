@@ -1,14 +1,39 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { spawn, type SpawnOptions } from 'child_process';
 
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
+
+/**
+ * Executes a command with arguments safely using spawn (no shell).
+ */
+function spawnAsync(command: string, args: string[], options: SpawnOptions = {}): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(command, args, options);
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout?.on('data', (data) => stdout += data.toString());
+    proc.stderr?.on('data', (data) => stderr += data.toString());
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        const error = new Error(`Command failed with code ${code}: ${command} ${args.join(' ')}`);
+        Object.assign(error, { stdout, stderr });
+        reject(error);
+      }
+    });
+
+    proc.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
 
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
@@ -25,7 +50,7 @@ export const worker = new Worker('Run Cloud', async job => {
     // 1. Create Fly App (ignore if exists)
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
-      await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+      await spawnAsync('flyctl', ['apps', 'create', appName, '--machines', '--org', 'personal'], { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
     } catch (e) {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
@@ -33,18 +58,19 @@ export const worker = new Worker('Run Cloud', async job => {
     // 2. Clone the repository
     const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
-    await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
+    await spawnAsync('git', ['clone', '--depth', '1', githubUrl, tmpDir]);
 
     // 3. Build and Deploy with Nixpacks
     console.log(`[Worker] Building and deploying with Nixpacks...`);
     // fly deploy using nixpacks builder
-    const deployCmd = `flyctl deploy . --app ${appName} --nixpacks --ha=false`;
-    const { stdout, stderr } = await execAsync(deployCmd, { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
+    const { stdout, stderr } = await spawnAsync('flyctl', ['deploy', '.', '--app', appName, '--nixpacks', '--ha=false'], { cwd: tmpDir, env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
     console.log(stdout); 
     if (stderr) console.error(stderr);
 
     // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
+    // Use fs.rm instead of rm command for better safety
+    const { rm } = await import('fs/promises');
+    await rm(tmpDir, { recursive: true, force: true });
 
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
@@ -56,7 +82,8 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as { stderr?: string; stdout?: string; message?: string };
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
