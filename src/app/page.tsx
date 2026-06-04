@@ -326,7 +326,7 @@ export default function Home() {
   const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
   const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
   const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
+  const categorizedGroups = useMemo(() => groupReposByCategory(displayRepos), [displayRepos]);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
   const canShowSeeAll = listRepos.length > 32;
 
