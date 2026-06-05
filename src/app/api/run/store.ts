@@ -1,7 +1,9 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
+
+import { isValidRepoUrl } from "@/lib/validation";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
 // These are only used when REDIS_URL is explicitly set in the environment.
@@ -195,10 +197,9 @@ function inferTemplate(runtime: RuntimeProfile) {
 }
 
 function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
+  return randomBytes(Math.ceil(length / 2))
+    .toString("hex")
+    .slice(0, length);
 }
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
@@ -882,6 +883,10 @@ function snapshot(job: StoredRunJob): RunJob {
 }
 
 export async function createRunJob(repo: RepoPayload, options?: RunJobOptions) {
+  if (!isValidRepoUrl(repo.url)) {
+    throw new Error("Invalid repository URL. Only HTTPS GitHub URLs are allowed.");
+  }
+
   await loadJobs();
   const now = Date.now();
   const profile = createDefaultRuntimeProfile();
