@@ -1,0 +1,3 @@
+## 2025-05-15 - Optimizing Component Rendering and String Processing
+**Learning:** In list-heavy React applications, performing expensive operations (like SVG generation or regex-heavy string simplification) inside the render path of every item can significantly degrade performance, even if the results are only used by certain variants. Caching these results at the utility level and deferring variant-specific work provides a cumulative speedup that is much greater than either optimization alone.
+**Action:** Always check if expensive data transformation or asset generation (like SVG backdrops) can be deferred to specific component variants. Implement memoization and utility-level caching for processing-intensive functions used in repeated list items.
