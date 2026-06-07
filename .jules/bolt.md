@@ -1,0 +1,3 @@
+## 2025-05-15 - RepoCard & Summary Optimization
+**Learning:** In multi-variant components used in large lists (like `RepoCard.tsx`), computing assets for unused variants (like SVG data-URLs for backdrops) during every render cycle adds significant overhead. Additionally, expensive string processing with multiple regex replacements in utility functions like `summarizeRepoForBeginners` can be a bottleneck when the same data is rendered repeatedly across different views.
+**Action:** Isolate expensive asset generation within conditional blocks specific to the variant that needs them. Implement bounded memoization for pure data-to-prose conversion functions to skip redundant computations. Always wrap primary list items in `React.memo` to leverage props stability.
