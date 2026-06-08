@@ -124,8 +124,17 @@ function uniqNonEmpty(items: string[]): string[] {
 }
 
 /* ── Short summary (card-level) ── */
+const summaryCache = new Map<string, RepoSummary>();
+
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
+  const sortedTopics = [...(repo.topics || [])].sort();
+  const cacheKey = `${repo.title || ""}|${raw}|${repo.language || ""}|${sortedTopics.join(",")}`;
+
+  const cached = summaryCache.get(cacheKey);
+  if (cached) return cached;
+
+  // Use space-separated topics for the combined string to preserve regex matching behavior
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
@@ -233,12 +242,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Keep cache size bounded
+  if (summaryCache.size > 1000) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
