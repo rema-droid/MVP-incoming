@@ -1,0 +1,3 @@
+## 2025-05-15 - Repository List Rendering Bottleneck
+**Learning:** Rendering large lists of repositories (like the "Explore" or "Trending" tabs) was computationally expensive because `RepoCard` was performing regex-heavy string processing (`summarizeRepoForBeginners`) and complex SVG generation (`getRepoBackdrop`) on every render, even for the standard list view. Additionally, frequent re-renders of the entire list were occurring during state updates in `Home`.
+**Action:** 1) Implement a bounded content-based cache for expensive metadata processing functions. 2) Wrap list item components in `React.memo` and defer expensive asset generation to variant-specific logic paths. 3) Use `useMemo` for heavy data grouping logic in the parent container.
