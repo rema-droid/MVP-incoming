@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -195,10 +195,7 @@ function inferTemplate(runtime: RuntimeProfile) {
 }
 
 function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
+  return randomBytes(length).toString("hex").slice(0, length);
 }
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
@@ -218,7 +215,7 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !/^[a-zA-Z0-9_]+$/.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
@@ -237,7 +234,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +247,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
@@ -881,7 +878,12 @@ function snapshot(job: StoredRunJob): RunJob {
   };
 }
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(\.git)?$/;
+
 export async function createRunJob(repo: RepoPayload, options?: RunJobOptions) {
+  if (!GITHUB_URL_REGEX.test(repo.url)) {
+    throw new Error("Invalid repository URL. Only GitHub URLs are supported.");
+  }
   await loadJobs();
   const now = Date.now();
   const profile = createDefaultRuntimeProfile();
