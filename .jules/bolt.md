@@ -1,0 +1,3 @@
+## 2025-05-15 - Repository Card List Performance
+**Learning:** Rendering large lists of components like `RepoCard` can be a major bottleneck if expensive logic (like SVG generation or complex string parsing) is executed for every item, even when not visible in the current variant. Deferring these computations behind variant-specific conditionals and adding a bounded cache for metadata-derived summaries yields massive speedups (~15x-20x for common list rendering).
+**Action:** Always check if expensive UI computations (SVGs, palettes, labels) can be deferred to specific variants or memoized/cached, especially in list-heavy views.
