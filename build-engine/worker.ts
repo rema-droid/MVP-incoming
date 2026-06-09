@@ -10,12 +10,20 @@ console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(\.git)?$/;
+
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
-  const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+  if (!githubUrl || !GITHUB_URL_REGEX.test(githubUrl)) {
+    console.error(`[Worker] Invalid or missing GitHub URL: ${githubUrl}`);
+    return;
+  }
+
+  const rawRepoId = String(job.data.repoId || job.data.id || 'unknown');
+  const repoId = rawRepoId.replace(/[^a-zA-Z0-9-]/g, '_');
+  const appName = `gitmurph-${repoId.toLowerCase()}`.slice(0, 30);
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -25,8 +33,9 @@ export const worker = new Worker('Run Cloud', async job => {
     // 1. Create Fly App (ignore if exists)
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
+      // appName is sanitized and prefixed
       await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
@@ -56,12 +65,16 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (error) {
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    let logDetails = String(error);
+    if (error && typeof error === 'object') {
+      const err = error as Record<string, unknown>;
+      logDetails = String(err.stderr || err.stdout || err.message || error);
+    }
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
