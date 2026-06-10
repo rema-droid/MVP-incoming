@@ -123,10 +123,18 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
-  const topicsText = (repo.topics || []).join(" ");
+  const topicsText = [...(repo.topics || [])].sort().join(",");
+  const cacheKey = `${repo.title}|${raw}|${repo.language}|${topicsText}`;
+
+  if (summaryCache.has(cacheKey)) {
+    return summaryCache.get(cacheKey)!;
+  }
+
   const combined =
     `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
 
@@ -233,12 +241,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Limit cache size to prevent memory leaks in long-running processes
+  if (summaryCache.size > 1000) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+  summaryCache.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
