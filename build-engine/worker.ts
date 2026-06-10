@@ -3,6 +3,7 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { GITHUB_URL_REGEX } from '../src/lib/security';
 
 const execAsync = promisify(exec);
 
@@ -14,8 +15,13 @@ export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
-  const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+
+  if (!githubUrl || !GITHUB_URL_REGEX.test(githubUrl)) {
+    throw new Error(`Invalid GitHub URL: ${githubUrl}`);
+  }
+
+  const repoId = String(job.data.repoId || job.data.id || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+  const appName = `gitmurph-${repoId.toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -56,12 +62,13 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    const err = error as Record<string, unknown>;
+    const logDetails = err.stderr || err.stdout || err.message || String(error);
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;

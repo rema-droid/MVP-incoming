@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -21,7 +21,7 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    buildQueue = new Queue("Run Cloud", { connection: client as any });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
@@ -195,10 +195,9 @@ function inferTemplate(runtime: RuntimeProfile) {
 }
 
 function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
+  return randomBytes(Math.ceil(length / 2))
+    .toString("hex")
+    .slice(0, length);
 }
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
@@ -218,7 +217,7 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !/^[a-zA-Z0-9_]+$/.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
