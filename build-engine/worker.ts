@@ -6,6 +6,8 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+(?:\.git)?$/;
+
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
@@ -13,13 +15,20 @@ const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
-  const githubUrl = job.data.url || job.data.githubUrl;
-  const repoId = job.data.repoId || job.data.id || 'unknown';
-  const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+  const githubUrl = String(job.data.url || job.data.githubUrl || '');
+  const rawRepoId = String(job.data.repoId || job.data.id || 'unknown');
+
+  // Sanitize repoId to prevent path traversal or command injection
+  const repoId = rawRepoId.replace(/[^a-zA-Z0-9-]/g, '_');
+  const appName = `gitmurph-${repoId.toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
   try {
+    if (!GITHUB_URL_REGEX.test(githubUrl)) {
+      throw new Error(`Invalid GitHub URL: ${githubUrl}`);
+    }
+
     await redis.set(`repo:${repoId}:status`, 'building');
 
     // 1. Create Fly App (ignore if exists)
@@ -56,12 +65,13 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (error) {
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    const errObj = error as Record<string, unknown>;
+    const logDetails = errObj.stderr || errObj.stdout || errObj.message || String(error);
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
