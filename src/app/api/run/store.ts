@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -21,7 +21,7 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    buildQueue = new Queue("Run Cloud", { connection: client as any });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
@@ -197,7 +197,13 @@ function inferTemplate(runtime: RuntimeProfile) {
 function randomToken(length: number) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
+  while (value.length < length) {
+    const bytes = randomBytes(1);
+    const byte = bytes[0];
+    if (byte < 62) {
+      value += chars[byte];
+    }
+  }
   return value;
 }
 
@@ -237,7 +243,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +256,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
