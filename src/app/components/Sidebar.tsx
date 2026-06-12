@@ -1,6 +1,7 @@
 "use client";
 
-import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap } from "lucide-react";
+import { useRef } from "react";
+import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap, X } from "lucide-react";
 
 export type Tab = "discover" | "categories" | "shop" | "feed" | "runtime" | "trending" | "runnable" | "viewed" | "bookmarks" | "settings";
 
@@ -20,6 +21,8 @@ export default function Sidebar({
   onSearchChange,
   onSearchSubmit,
 }: SidebarProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const getIconClass = (id: string) => 
     `h-4 w-4 shrink-0 transition-colors duration-200 ${
       activeTab === id ? "text-blue-400" : "text-blue-400/60"
@@ -98,12 +101,26 @@ export default function Sidebar({
         <form onSubmit={onSearchSubmit} className="relative w-full">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-9 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                onSearchChange?.("");
+                searchInputRef.current?.focus();
+              }}
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </form>
       </div>
 
@@ -118,6 +135,7 @@ export default function Sidebar({
               {isDivider && <div className="mx-2 my-3 border-t border-white/5" />}
               <button
                 onClick={() => onTabChange(item.id)}
+                aria-current={activeTab === item.id ? "page" : undefined}
                 className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   activeTab === item.id
                     ? "bg-white/10 text-white"
