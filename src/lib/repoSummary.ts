@@ -123,10 +123,19 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const summaryCache = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 1000;
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
   const raw = repo.plainEnglishDescription || "";
-  const topicsText = (repo.topics || []).join(" ");
+  const topics = [...(repo.topics || [])].sort();
+  const topicsText = topics.join(" ");
+  const cacheKey = `${repo.title || ""}|${raw}|${topicsText}|${repo.language || ""}`.toLowerCase();
+
+  const cached = summaryCache.get(cacheKey);
+  if (cached) return cached;
+
   const combined =
     `${repo.title || ""} ${raw} ${topicsText} ${repo.language || ""}`.toLowerCase();
 
@@ -199,6 +208,13 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
       : cleaned
     : `A ${typeLabel.toLowerCase()} made by volunteers who share their work for free.`;
 
+  const result = {
+    typeLabel,
+    short,
+    deep: "", // placeholder for now, calculated below
+    goodForPills,
+  };
+
   /* Build the deep paragraph shown on the detail/card expanded view */
   let useSentence =
     "Tap Run and we handle all the boring setup. When things are ready, it opens in your browser like a normal website — you just click around.";
@@ -233,12 +249,16 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
-    typeLabel,
-    short,
-    deep,
-    goodForPills,
-  };
+  result.deep = deep;
+
+  // Simple eviction policy
+  if (summaryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = summaryCache.keys().next().value;
+    if (firstKey !== undefined) summaryCache.delete(firstKey);
+  }
+
+  summaryCache.set(cacheKey, result);
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */
