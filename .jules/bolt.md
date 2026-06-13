@@ -1,0 +1,3 @@
+## 2025-05-14 - List Item Logic Deferral and Global Utility Caching
+**Learning:** React components in large lists often execute expensive logic (regex transformations, SVG string generation) for all variants, even when only one variant is rendered. Deferring this logic behind variant conditionals and implementing a bounded Map-based cache for expensive pure string-manipulation utilities (like repo summarizers) significantly reduces main-thread blocking during list renders.
+**Action:** Always check if expensive component logic can be deferred to specific variants or memoized/cached globally if the inputs are repetitive across different parts of the UI.
