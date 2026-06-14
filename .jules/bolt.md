@@ -1,0 +1,4 @@
+## 2026-06-14 - Expensive Regex and SVG Bottlenecks
+**Learning:** The `summarizeRepoForBeginners` function in `repoSummary.ts` performs ~70 regex replacements per call. When used in a long list of repository cards, this creates a measurable main-thread bottleneck. Additionally, generating SVGs for backdrops and calculating color palettes in `RepoCard.tsx` is expensive and only necessary for the 'widget' variant, but was previously running for the default 'list' variant as well.
+
+**Action:** Implement a bounded Map-based cache for expensive string-processing functions like `summarizeRepoForBeginners`. Defer variant-specific expensive calculations (like SVG/palette generation) inside conditional blocks to minimize work for the default list view. Use `React.memo` and `useMemo` to prevent redundant re-computations during parent re-renders.
