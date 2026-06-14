@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
@@ -197,7 +197,14 @@ function inferTemplate(runtime: RuntimeProfile) {
 function randomToken(length: number) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
+  const byteLength = chars.length;
+  for (let i = 0; i < length; i += 1) {
+    let randomIndex;
+    do {
+      randomIndex = randomBytes(1)[0];
+    } while (randomIndex >= 256 - (256 % byteLength));
+    value += chars[randomIndex % byteLength];
+  }
   return value;
 }
 
