@@ -1,0 +1,3 @@
+## 2025-05-15 - Deferred Logic and Memoization for Large Lists
+**Learning:** React components rendered in large lists often execute expensive logic (SVG generation, heavy regex replacements) even when the variant being displayed doesn't use that data. Deferring these computations behind variant-specific conditionals and using `useMemo` significantly reduces main thread blocking. Additionally, a bounded `Map` cache for pure utility functions that process strings can yield a 10x-15x performance boost for repeated data.
+**Action:** Always audit expensive functions in shared UI components and defer them to specific branches. Implement LRU-style bounded caches in utility modules for stable data.
