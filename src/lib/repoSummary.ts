@@ -123,8 +123,18 @@ function uniqNonEmpty(items: string[]): string[] {
   return out;
 }
 
+const SUMMARY_CACHE = new Map<string, RepoSummary>();
+const MAX_CACHE_SIZE = 1000;
+
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  // Performance: Use a cache to avoid expensive regex processing on every render.
+  // We use a stable composite key based on title and language.
+  const cacheKey = `${repo.title || ""}|${repo.language || ""}`;
+
+  const cached = SUMMARY_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,12 +243,21 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const result = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  // Maintain cache size
+  if (SUMMARY_CACHE.size >= MAX_CACHE_SIZE) {
+    const firstKey = SUMMARY_CACHE.keys().next().value;
+    if (firstKey !== undefined) SUMMARY_CACHE.delete(firstKey);
+  }
+  SUMMARY_CACHE.set(cacheKey, result);
+
+  return result;
 }
 
 /** Friendly category label — never a programming language name. */

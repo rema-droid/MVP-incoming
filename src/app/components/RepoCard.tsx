@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { memo, useMemo } from "react";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
 
@@ -104,15 +105,15 @@ export function getRepoBackdrop(repo: Repo) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
-  const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
-  const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
-  const eyebrow = friendlyCategoryLabel(repo);
-  const summary = summarizeRepoForBeginners(repo);
+const RepoCard = memo(function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+  const summary = useMemo(() => summarizeRepoForBeginners(repo), [repo]);
 
   if (variant === "widget") {
+    const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
+    const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
+    const backdrop = getRepoBackdrop(repo);
+    const palette = getRepoPalette(repo);
+    const eyebrow = friendlyCategoryLabel(repo);
     return (
       <article className="group relative flex min-h-[248px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#062a34] p-0 shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
         <div className="relative min-h-[248px] w-full">
@@ -236,6 +237,9 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
     );
   }
 
+  const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
+  const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
+
   return (
     <article className="group flex w-full items-start gap-4 border-b border-white/5 py-4 transition-all hover:bg-white/5 px-2 rounded-xl">
       <div className="relative shrink-0 overflow-hidden squircle shadow-[0_2px_10px_rgba(0,0,0,0.5)] h-[88px] w-[88px] bg-black/40 border border-white/10 flex flex-col justify-center items-center">
@@ -306,4 +310,6 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
       </div>
     </article>
   );
-}
+});
+
+export default RepoCard;
