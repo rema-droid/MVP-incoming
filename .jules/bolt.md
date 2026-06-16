@@ -1,0 +1,3 @@
+## 2025-06-16 - Optimization of Repo Summarization and Card Rendering
+**Learning:** Repetitive execution of complex regex-based string manipulations in React render loops (like in `summarizeRepoForBeginners`) creates significant main-thread pressure, especially when rendering large lists (100+ items). Deferring expensive UI asset generation (like SVGs or dynamic palettes) to only the specific variants that use them yields immediate rendering performance gains for the default view.
+**Action:** Always implement a bounded cache for expensive pure functions used in rendering. Defer variant-specific heavy logic behind conditional checks to minimize the performance footprint of the default component state.
