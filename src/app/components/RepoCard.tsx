@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import Image from "next/image";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -62,8 +63,27 @@ function escapeSvg(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+const backdropCache = new Map<string, string>();
+const MAX_BACKDROP_CACHE_SIZE = 500;
+
+function getBackdropCacheKey(repo: Repo): string {
+  return `${repo.title}|${repo.language}|${(repo.topics || []).join(",")}|${repo.owner}`;
+}
+
+function setWithEviction<K, V>(map: Map<K, V>, key: K, value: V, maxSize: number) {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, value);
+}
+
 /* Backdrop SVG for widget cards — no external images, just a beautiful gradient */
 export function getRepoBackdrop(repo: Repo) {
+  const cacheKey = getBackdropCacheKey(repo);
+  const cached = backdropCache.get(cacheKey);
+  if (cached) return cached;
+
   const palette = getRepoPalette(repo);
   const label = friendlyCategoryLabel(repo);
   const topic = repo.topics?.find(Boolean)?.replace(/-/g, " ") || repo.owner || "Try it free";
@@ -101,18 +121,25 @@ export function getRepoBackdrop(repo: Repo) {
       <text x="88" y="770" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" fill="rgba(255,255,255,0.80)">${escapeSvg(topic)}</text>
     </svg>
   `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+  setWithEviction(backdropCache, cacheKey, result, MAX_BACKDROP_CACHE_SIZE);
+
+  return result;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
   const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
   const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
-  const eyebrow = friendlyCategoryLabel(repo);
-  const summary = summarizeRepoForBeginners(repo);
+
+  // Memoize summary as it's used in both variants but involves regex/logic
+  const summary = useMemo(() => summarizeRepoForBeginners(repo), [repo]);
 
   if (variant === "widget") {
+    // These are expensive and only needed for the widget variant
+    const backdrop = getRepoBackdrop(repo);
+    const palette = getRepoPalette(repo);
+    const eyebrow = friendlyCategoryLabel(repo);
     return (
       <article className="group relative flex min-h-[248px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#062a34] p-0 shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
         <div className="relative min-h-[248px] w-full">
@@ -307,3 +334,5 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
     </article>
   );
 }
+
+export default memo(RepoCard);
