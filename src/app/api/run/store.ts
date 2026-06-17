@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
+import { randomToken, GITHUB_URL_REGEX, ENV_KEY_REGEX } from "@/lib/security";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
 // These are only used when REDIS_URL is explicitly set in the environment.
@@ -21,7 +22,7 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    buildQueue = new Queue("Run Cloud", { connection: client as unknown as import("bullmq").ConnectionOptions });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
@@ -194,12 +195,6 @@ function inferTemplate(runtime: RuntimeProfile) {
   return "node-web";
 }
 
-function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
-}
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
   const inferred = inferInfraServices(repo);
@@ -218,7 +213,7 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !ENV_KEY_REGEX.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
@@ -237,7 +232,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +245,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
@@ -882,6 +877,10 @@ function snapshot(job: StoredRunJob): RunJob {
 }
 
 export async function createRunJob(repo: RepoPayload, options?: RunJobOptions) {
+  if (!GITHUB_URL_REGEX.test(repo.url)) {
+    throw new Error("Invalid GitHub repository URL.");
+  }
+
   await loadJobs();
   const now = Date.now();
   const profile = createDefaultRuntimeProfile();
