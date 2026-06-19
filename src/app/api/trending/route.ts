@@ -18,6 +18,31 @@ interface GitHubSearchResponse {
   items?: GitHubRepo[];
 }
 
+/**
+ * In-memory cache for trending repositories.
+ * GitHub API is slow and frequently rate-limited for unauthenticated requests.
+ * TTL: 5 minutes. Size: 100 entries (FIFO).
+ */
+const TRENDING_CACHE = new Map<string, { data: unknown; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+const MAX_CACHE_SIZE = 100;
+
+function getCachedData(key: string) {
+  const cached = TRENDING_CACHE.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedData(key: string, data: unknown) {
+  if (TRENDING_CACHE.size >= MAX_CACHE_SIZE) {
+    const firstKey = TRENDING_CACHE.keys().next().value;
+    if (firstKey !== undefined) TRENDING_CACHE.delete(firstKey);
+  }
+  TRENDING_CACHE.set(key, { data, timestamp: Date.now() });
+}
+
 // ── Curated list of repos that are known to start successfully ────────────
 // Selection criteria: has package.json + npm start (or Python/Flask),
 // no mandatory API keys, no mandatory database, well-maintained.
@@ -99,6 +124,13 @@ function mapRepo(repo: GitHubRepo) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") || "discover";
+
+  // Check cache first
+  const cached = getCachedData(category);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
@@ -153,6 +185,7 @@ export async function GET(request: Request) {
       }
 
       const mapped = repos.map(mapRepo);
+      setCachedData(category, mapped);
       return NextResponse.json(mapped);
     }
 
@@ -215,6 +248,7 @@ export async function GET(request: Request) {
       });
     }
 
+    setCachedData(category, mapped);
     return NextResponse.json(mapped);
   } catch (error) {
     console.error(error);

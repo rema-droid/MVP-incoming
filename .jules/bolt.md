@@ -1,0 +1,3 @@
+## 2025-05-15 - GitHub API Latency and Regex Allocation Overhead
+**Learning:** The `trending` API category `discover` is significantly slowed down by multiple sequential GitHub API calls and rate limiting, causing ~10s response times. Additionally, high-frequency utility functions like `summarizeRepoForBeginners` incur measurable overhead (~0.065ms/call) by re-allocating large arrays and regex literals on every call.
+**Action:** Implement bounded in-memory caching for API routes that fetch from external, rate-limited services. Hoist static data and regex literals to module-level constants in high-frequency data processing utilities to reduce allocation pressure.
