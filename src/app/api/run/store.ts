@@ -21,7 +21,7 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    buildQueue = new Queue("Run Cloud", { connection: client as unknown as import("bullmq").ConnectionOptions });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
