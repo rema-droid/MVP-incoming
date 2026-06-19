@@ -96,9 +96,18 @@ function mapRepo(repo: GitHubRepo) {
   };
 }
 
+const TRENDING_CACHE = new Map<string, { data: unknown; expiry: number }>();
+const MAX_CACHE_ENTRIES = 100;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") || "discover";
+
+  const cached = TRENDING_CACHE.get(category);
+  if (cached && cached.expiry > Date.now()) {
+    return NextResponse.json(cached.data);
+  }
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
@@ -214,6 +223,13 @@ export async function GET(request: Request) {
         return b.stars - a.stars;
       });
     }
+
+    // Bounded FIFO eviction
+    if (TRENDING_CACHE.size >= MAX_CACHE_ENTRIES) {
+      const firstKey = TRENDING_CACHE.keys().next().value;
+      if (firstKey) TRENDING_CACHE.delete(firstKey);
+    }
+    TRENDING_CACHE.set(category, { data: mapped, expiry: Date.now() + CACHE_TTL });
 
     return NextResponse.json(mapped);
   } catch (error) {
