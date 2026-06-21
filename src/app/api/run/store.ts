@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import { promises as fs } from "fs";
+import { randomToken, ENV_KEY_REGEX } from "@/lib/security";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
 // These are only used when REDIS_URL is explicitly set in the environment.
@@ -194,12 +195,6 @@ function inferTemplate(runtime: RuntimeProfile) {
   return "node-web";
 }
 
-function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
-}
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
   const inferred = inferInfraServices(repo);
@@ -218,7 +213,7 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !ENV_KEY_REGEX.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
