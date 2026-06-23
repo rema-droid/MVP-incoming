@@ -6,6 +6,9 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9._-]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
@@ -18,6 +21,20 @@ export const worker = new Worker('Run Cloud', async job => {
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
+
+  if (!GITHUB_URL_REGEX.test(githubUrl)) {
+    console.error(`[Worker] Invalid GitHub URL: ${githubUrl}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Security: Invalid GitHub URL');
+    return;
+  }
+
+  if (!APP_NAME_REGEX.test(appName)) {
+    console.error(`[Worker] Invalid App Name: ${appName}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Security: Invalid App Name');
+    return;
+  }
 
   try {
     await redis.set(`repo:${repoId}:status`, 'building');
