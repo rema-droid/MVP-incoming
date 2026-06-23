@@ -1,0 +1,3 @@
+## 2025-05-15 - Clear Search UX Pattern
+**Learning:** Adding a "Clear Search" button to input fields significantly improves the experience for users who want to quickly reset their filters without manually deleting text. Essential for this pattern is ensuring accessibility via `aria-label` and managing focus—specifically, returning focus to the input field after clearing so the user can immediately type a new query.
+**Action:** Always include a `useRef` for search inputs that have a clear button to facilitate programmatic focus management, and use `aria-label` on both the input and the clear button.
