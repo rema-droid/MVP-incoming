@@ -1,0 +1,3 @@
+## 2025-05-15 - Improving Search Input Micro-UX
+**Learning:** For clearable search inputs, providing a "Clear" button is essential for UX, but it must be accompanied by explicit focus management. Simply clearing the state isn't enough; returning focus to the input element allows users to immediately start a new search without additional clicks or tab presses.
+**Action:** Always use a `useRef` to target the input element when implementing clear buttons, and call `.focus()` after clearing the search state. Ensure decorative icons within the button use `aria-hidden="true"` and the button itself has a descriptive `aria-label`.
