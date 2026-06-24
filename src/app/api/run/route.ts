@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectRuntime } from '@/lib/runtimes';
+import { GITHUB_URL_REGEX } from "@/lib/security";
 
 import { createRunJob, listRunJobs } from "./store";
 
@@ -39,8 +40,12 @@ export async function POST(request: Request) {
     const body: RunRequestBody = await request.json();
     const repo = body.repo;
 
-    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
+    if (!repo || typeof repo.id !== 'number' || !Number.isFinite(repo.id) || !repo.title || !repo.url) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    if (!GITHUB_URL_REGEX.test(repo.url)) {
+      return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
