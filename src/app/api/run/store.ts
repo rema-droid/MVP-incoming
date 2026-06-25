@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
+import { randomToken } from "@/lib/security";
 import { promises as fs } from "fs";
 
 // ── Optional Redis + BullMQ ────────────────────────────────────────────────
@@ -194,12 +195,6 @@ function inferTemplate(runtime: RuntimeProfile) {
   return "node-web";
 }
 
-function randomToken(length: number) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let value = "";
-  for (let i = 0; i < length; i += 1) value += chars[Math.floor(Math.random() * chars.length)];
-  return value;
-}
 
 function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: RunJobOptions): InfraProfile {
   const inferred = inferInfraServices(repo);
@@ -237,7 +232,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +245,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
