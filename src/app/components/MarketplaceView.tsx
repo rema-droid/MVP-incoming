@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   Search,
+  X,
   Play,
   Star,
   TrendingUp,
@@ -221,6 +222,7 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
   const [activeCategory, setActiveCategory] = useState("all");
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [marketSearch, setMarketSearch] = useState("");
+  const marketSearchRef = useRef<HTMLInputElement>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [freeOnly, setFreeOnly] = useState(false);
 
@@ -378,12 +380,27 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
+              ref={marketSearchRef}
               type="text"
               value={marketSearch}
               onChange={(e) => setMarketSearch(e.target.value)}
               placeholder="Search marketplace..."
-              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
+              aria-label="Search marketplace"
+              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-10 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
             />
+            {marketSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMarketSearch("");
+                  marketSearchRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-500 hover:bg-white/10 hover:text-zinc-200 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
