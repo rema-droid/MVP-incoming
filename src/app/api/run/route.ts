@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectRuntime } from '@/lib/runtimes';
+import { GITHUB_URL_REGEX, ENV_KEY_REGEX } from "@/lib/security";
 
 import { createRunJob, listRunJobs } from "./store";
 
@@ -39,8 +40,17 @@ export async function POST(request: Request) {
     const body: RunRequestBody = await request.json();
     const repo = body.repo;
 
-    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
+    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url || !GITHUB_URL_REGEX.test(repo.url)) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    const env = body.options?.env;
+    if (env) {
+      for (const key of Object.keys(env)) {
+        if (!ENV_KEY_REGEX.test(key)) {
+          return NextResponse.json({ error: `Invalid environment variable key: ${key}` }, { status: 400 });
+        }
+      }
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
