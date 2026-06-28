@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, FormEvent, useMemo, useCallback } from "react";
-import { Search, Loader2, Bookmark, Eye, Rocket, CheckCircle2, AlertCircle, Wrench, Boxes, Hammer } from "lucide-react";
+import { useState, useEffect, FormEvent, useMemo, useCallback, useRef } from "react";
+import { Search, Loader2, Bookmark, Eye, Rocket, CheckCircle2, AlertCircle, Wrench, Boxes, Hammer, X } from "lucide-react";
 
 import Sidebar, { Tab } from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
@@ -329,6 +329,7 @@ export default function Home() {
   const categorizedGroups = groupReposByCategory(displayRepos);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
   const canShowSeeAll = listRepos.length > 32;
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -350,12 +351,27 @@ export default function Home() {
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search"
-                  className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-9 pr-4 text-sm text-white placeholder-zinc-500 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
+                  aria-label="Search repositories"
+                  className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-9 pr-10 text-sm text-white placeholder-zinc-500 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </form>
 
