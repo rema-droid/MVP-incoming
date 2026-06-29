@@ -1,0 +1,3 @@
+## 2025-05-15 - Constant Hoisting and Memoization in `repoSummary.ts`
+**Learning:** High-traffic utility functions that perform string manipulation and regex testing can become a bottleneck when called hundreds of times per page (e.g., in `RepoCard` lists). Hoisting large constant arrays (like `SWAPS`) and pre-compiling regexes out of the function body provides a significant speedup. Additionally, adding a simple bounded FIFO cache using a Map with `id` as the primary key nearly eliminates execution time for repeated calls on the same repository data.
+**Action:** Always look for opportunities to hoist constants and pre-compile regexes in utility functions. For data-driven transformations, implement a simple memoization layer with a sensible eviction policy.
