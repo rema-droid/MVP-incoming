@@ -1,0 +1,3 @@
+## 2025-05-14 - Standardizing Clear Search Button Pattern
+**Learning:** In a multi-layout application like GITMURPH, search inputs often appear in different contexts (sidebar, main content, mobile header) and can share ARIA labels. Using `useRef` to programmatically refocus the input after clearing is essential for a seamless keyboard/screen reader experience. Additionally, absolute positioning of the clear button requires increasing the input's right padding (e.g., `pr-3` to `pr-9`) to avoid visual overlap with the text.
+**Action:** Always implement the `useRef` refocus pattern for clear buttons and verify layout-specific inputs using scoped Playwright selectors (e.g., `page.locator("aside")`) to avoid ambiguity.
