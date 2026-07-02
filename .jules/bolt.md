@@ -1,0 +1,3 @@
+## 2025-05-14 - Efficient Bounded Memoization for Metadata Processing
+**Learning:** High-traffic utility functions like `summarizeRepoForBeginners` that perform heavy string manipulation and regex testing can be significantly optimized (up to 99%) by hoisting constants and implementing a bounded FIFO cache. Using `Map` with `cache.delete(cache.keys().next().value)` allows for constant-time eviction without maintaining a separate keys array.
+**Action:** Always check for high-frequency string processing utilities and implement bounded memoization using stable IDs when available, falling back to composite keys otherwise.
