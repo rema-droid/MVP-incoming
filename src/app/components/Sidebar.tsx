@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap } from "lucide-react";
+import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap, X } from "lucide-react";
 
 export type Tab = "discover" | "categories" | "shop" | "feed" | "runtime" | "trending" | "runnable" | "viewed" | "bookmarks" | "settings";
 
@@ -10,7 +10,9 @@ interface SidebarProps {
   onTabChange: (tab: Tab) => void;
   searchQuery?: string;
   onSearchChange?: (q: string) => void;
+  onSearchClear?: () => void;
   onSearchSubmit?: (e: React.FormEvent) => void;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export default function Sidebar({
@@ -18,7 +20,9 @@ export default function Sidebar({
   onTabChange,
   searchQuery = "",
   onSearchChange,
+  onSearchClear,
   onSearchSubmit,
+  inputRef,
 }: SidebarProps) {
   const getIconClass = (id: string) => 
     `h-4 w-4 shrink-0 transition-colors duration-200 ${
@@ -98,12 +102,30 @@ export default function Sidebar({
         <form onSubmit={onSearchSubmit} className="relative w-full">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
+            ref={inputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-9 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onSearchClear) {
+                  onSearchClear();
+                } else {
+                  onSearchChange?.("");
+                  inputRef?.current?.focus();
+                }
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 hover:bg-white/10 hover:text-zinc-300 transition-all"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </form>
       </div>
 
