@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, FormEvent, useMemo, useCallback } from "react";
-import { Search, Loader2, Bookmark, Eye, Rocket, CheckCircle2, AlertCircle, Wrench, Boxes, Hammer } from "lucide-react";
+import { useState, useEffect, FormEvent, useMemo, useCallback, useRef } from "react";
+import { Search, Loader2, Bookmark, Eye, Rocket, CheckCircle2, AlertCircle, Wrench, Boxes, Hammer, X } from "lucide-react";
 
 import Sidebar, { Tab } from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
@@ -149,6 +149,19 @@ export default function Home() {
   const [runJobs, setRunJobs] = useState<RuntimeRunJob[]>([]);
   const [isRunQueueLoading, setIsRunQueueLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const desktopSearchRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setSearchResults([]);
+    if (window.innerWidth >= 1024) {
+      desktopSearchRef.current?.focus();
+    } else {
+      mobileSearchRef.current?.focus();
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -337,7 +350,9 @@ export default function Home() {
         onTabChange={setActiveTab} 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onSearchClear={clearSearch}
         onSearchSubmit={handleSearch}
+        inputRef={desktopSearchRef}
       />
 
       <main className="flex h-[100dvh] bg-[#042a33] w-full flex-1 flex-col overflow-y-auto px-4 py-8 pb-32 sm:px-10 sm:py-10">
@@ -350,12 +365,23 @@ export default function Home() {
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                 <input
+                  ref={mobileSearchRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search"
-                  className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-9 pr-4 text-sm text-white placeholder-zinc-500 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
+                  className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-9 pr-9 text-sm text-white placeholder-zinc-500 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 hover:bg-white/10 hover:text-zinc-300 transition-all"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </form>
 
@@ -686,7 +712,7 @@ export default function Home() {
               </div>
             )}
 
-            {!isLoading && !isSearching && displayRepos.length === 0 && activeTab !== "runtime" && activeTab !== "shop" && activeTab !== "feed" && (
+            {!isLoading && !isSearching && searchQuery.trim().length > 0 && searchResults.length === 0 && activeTab !== "runtime" && activeTab !== "shop" && activeTab !== "feed" && (
               <div className="flex flex-col items-center justify-center gap-3 py-32 text-center bg-black/20 rounded-2xl border border-white/5 shadow-inner">
                 {activeTab === "viewed" ? (
                   <>
@@ -703,9 +729,17 @@ export default function Home() {
                     </p>
                   </>
                 ) : (
-                  <p className="text-sm font-medium text-zinc-400">
-                    No results found. Try a different search.
-                  </p>
+                  <>
+                    <p className="text-sm font-medium text-zinc-400">
+                      No results found for &quot;{searchQuery}&quot;.
+                    </p>
+                    <button
+                      onClick={clearSearch}
+                      className="mt-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-semibold text-blue-200 hover:bg-blue-400/15 transition-colors"
+                    >
+                      Clear search
+                    </button>
+                  </>
                 )}
               </div>
             )}
