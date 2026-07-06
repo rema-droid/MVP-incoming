@@ -72,6 +72,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             setLiked(!liked);
           }}
           className="flex items-center gap-1.5 transition-all"
+          aria-label={liked ? "Unlike" : "Like"}
         >
           <Heart
             className={`h-4 w-4 transition-all duration-300 ${
@@ -85,6 +86,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         <button
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label="View comments"
         >
           <MessageCircle className="h-4 w-4" />
           <span className="text-[12px] font-medium text-zinc-500">{Math.floor(repo.stars / 500)}</span>
@@ -92,6 +94,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         <button
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label="Share"
         >
           <Share2 className="h-4 w-4" />
         </button>

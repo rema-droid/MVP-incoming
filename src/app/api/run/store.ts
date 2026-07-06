@@ -21,7 +21,8 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    buildQueue = new Queue("Run Cloud", { connection: client as any });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
