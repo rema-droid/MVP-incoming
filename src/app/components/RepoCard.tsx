@@ -107,12 +107,12 @@ export function getRepoBackdrop(repo: Repo) {
 export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
   const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
   const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
   const eyebrow = friendlyCategoryLabel(repo);
   const summary = summarizeRepoForBeginners(repo);
 
   if (variant === "widget") {
+    const backdrop = getRepoBackdrop(repo);
+    const palette = getRepoPalette(repo);
     return (
       <article className="group relative flex min-h-[248px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#062a34] p-0 shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
         <div className="relative min-h-[248px] w-full">
