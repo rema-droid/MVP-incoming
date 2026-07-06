@@ -34,6 +34,8 @@ export async function GET() {
   return NextResponse.json(jobs);
 }
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+
 export async function POST(request: Request) {
   try {
     const body: RunRequestBody = await request.json();
@@ -41,6 +43,11 @@ export async function POST(request: Request) {
 
     if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    // Security check: validate GitHub URL before proceeding
+    if (!GITHUB_URL_REGEX.test(repo.url)) {
+      return NextResponse.json({ error: 'Invalid GitHub URL format' }, { status: 400 });
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
