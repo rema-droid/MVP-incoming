@@ -1,0 +1,3 @@
+## 2025-05-15 - Redundant Regex Compilation and Computation in Repository Summarization
+**Learning:** The `summarizeRepoForBeginners` utility was a significant performance bottleneck because it re-allocated and re-compiled a large array (~75) of jargon replacement regular expressions on every call. Furthermore, this function (and other expensive SVG backdrop generators) were being called repeatedly in high-frequency render paths like list views, even when results were static for a given repository.
+**Action:** Hoist heavy regex arrays to module scope to avoid re-compilation. Implement a simple LRU-like cache for expensive string processing and data transformation functions that are called frequently with the same inputs across multiple UI components.
