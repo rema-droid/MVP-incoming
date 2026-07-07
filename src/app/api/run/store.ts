@@ -21,7 +21,8 @@ async function tryInitRedis() {
     const client = new Redis(url, { maxRetriesPerRequest: null, lazyConnect: true });
     await client.connect();
     redis = client;
-    buildQueue = new Queue("Run Cloud", { connection: client });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    buildQueue = new Queue("Run Cloud", { connection: client as any });
     console.log("[run/store] Connected to Redis successfully.");
   } catch (err) {
     console.warn("[run/store] Redis unavailable — falling back to local queue.", err);
@@ -237,7 +238,7 @@ function appendLog(job: StoredRunJob, message: string) {
 async function ensureStorage() {
   try {
     await fs.mkdir(WORKSPACES_DIR, { recursive: true });
-  } catch (e) {
+  } catch {
     console.warn("Could not create directories (likely read-only Vercel environment).");
   }
 }
@@ -250,7 +251,7 @@ async function saveJobs() {
   }));
   try {
     await fs.writeFile(JOBS_FILE, JSON.stringify(payload, null, 2), "utf8");
-  } catch (e) {
+  } catch {
     console.warn("Could not save jobs to local disk (likely read-only Vercel environment). Only using Redis.");
   }
 }
@@ -376,10 +377,6 @@ function publicAppUrlFor(jobId: string) {
   return `${RUN_PUBLIC_BASE_URL}/api/run/${jobId}/open`;
 }
 
-function shellEscape(value: string) {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
 async function canUseDocker() {
   if (RUN_EXECUTOR_MODE === "local") return false;
   if (RUN_EXECUTOR_MODE === "docker") return true;
@@ -451,7 +448,7 @@ async function provisionInfraServices(job: StoredRunJob) {
   }
 
   const networkName = `oslayer-net-${job.id.slice(0, 12)}`;
-  await runShell(`docker network create ${networkName}`, DATA_ROOT, job, 20000);
+  await runBinary("docker", ["network", "create", networkName], DATA_ROOT, job, 20000);
   job.infraNetwork = networkName;
 
   if (services.postgres) {
@@ -460,17 +457,17 @@ async function provisionInfraServices(job: StoredRunJob) {
     const database = "app";
     const containerName = `oslayer-pg-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 1000;
-    const pgCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${networkName}`,
-      `-e POSTGRES_USER=${user}`,
-      `-e POSTGRES_PASSWORD=${password}`,
-      `-e POSTGRES_DB=${database}`,
-      `-p ${hostPort}:5432`,
+    const pgArgs = [
+      "run", "-d",
+      "--name", containerName,
+      "--network", networkName,
+      "-e", `POSTGRES_USER=${user}`,
+      "-e", `POSTGRES_PASSWORD=${password}`,
+      "-e", `POSTGRES_DB=${database}`,
+      "-p", `${hostPort}:5432`,
       "postgres:16-alpine",
-    ].join(" ");
-    const ok = await runShell(pgCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+    ];
+    const { ok } = (await runBinary("docker", pgArgs, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS));
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.postgresUrl = `postgresql://${user}:${password}@${containerName}:5432/${database}`;
@@ -490,15 +487,15 @@ async function provisionInfraServices(job: StoredRunJob) {
     const password = randomToken(20);
     const containerName = `oslayer-redis-${job.id.slice(0, 10)}`;
     const hostPort = choosePort() + 2000;
-    const redisCommand = [
-      "docker run -d",
-      `--name ${containerName}`,
-      `--network ${job.infraNetwork}`,
-      `-p ${hostPort}:6379`,
+    const redisArgs = [
+      "run", "-d",
+      "--name", containerName,
+      "--network", job.infraNetwork!,
+      "-p", `${hostPort}:6379`,
       "redis:7-alpine",
-      `redis-server --requirepass ${password}`,
-    ].join(" ");
-    const ok = await runShell(redisCommand, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+      "redis-server", "--requirepass", password,
+    ];
+    const { ok } = (await runBinary("docker", redisArgs, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS));
     if (ok) {
       job.serviceContainers.push(containerName);
       bindings.redisUrl = `redis://:${password}@${containerName}:6379`;
@@ -514,11 +511,11 @@ async function provisionInfraServices(job: StoredRunJob) {
 
 async function cleanupInfraServices(job: StoredRunJob) {
   for (const container of job.serviceContainers) {
-    await runShell(`docker rm -f ${container}`, DATA_ROOT, job, 20000);
+    await runBinary("docker", ["rm", "-f", container], DATA_ROOT, job, 20000);
   }
   job.serviceContainers = [];
   if (job.infraNetwork) {
-    await runShell(`docker network rm ${job.infraNetwork}`, DATA_ROOT, job, 20000);
+    await runBinary("docker", ["network", "rm", job.infraNetwork], DATA_ROOT, job, 20000);
     job.infraNetwork = null;
   }
 }
@@ -633,12 +630,16 @@ async function runCommandsSequentiallyDocker(commands: string[], cwd: string, jo
     "node:20-bullseye";
 
   for (const command of commands) {
-    const envArgs = Object.entries(job.injectedEnv)
-      .map(([key, value]) => `-e ${key}=${shellEscape(value)}`)
-      .join(" ");
-    const networkArg = job.infraNetwork ? `--network ${job.infraNetwork}` : "";
-    const dockerCommand = `docker run --rm ${networkArg} ${envArgs} -v ${shellEscape(`${cwd}:/workspace`)} -w /workspace ${image} sh -lc ${shellEscape(command)}`;
-    const ok = await runShell(dockerCommand, DATA_ROOT, job, timeoutMs);
+    const args = ["run", "--rm"];
+    if (job.infraNetwork) {
+      args.push("--network", job.infraNetwork);
+    }
+    for (const [key, value] of Object.entries(job.injectedEnv)) {
+      args.push("-e", `${key}=${value}`);
+    }
+    args.push("-v", `${cwd}:/workspace`, "-w", "/workspace", image, "sh", "-lc", command);
+
+    const { ok } = await runBinary("docker", args, DATA_ROOT, job, timeoutMs);
     if (ok) return command;
     appendLog(job, `Failed command in docker: ${command}`);
   }
@@ -716,26 +717,23 @@ async function startRuntimeDocker(job: StoredRunJob, commands: string[]) {
 
   for (const raw of commands) {
     const command = raw.replace(/\$PORT/g, String(containerPort));
-    const envArgs = Object.entries(job.injectedEnv)
-      .map(([key, value]) => `-e ${key}=${shellEscape(value)}`)
-      .join(" ");
-    const networkArg = job.infraNetwork ? `--network ${job.infraNetwork}` : "";
-    const dockerCommand = `docker run -d ${networkArg} ${envArgs} -p ${port}:${containerPort} -v ${shellEscape(`${job.workspacePath}:/workspace`)} -w /workspace ${image} sh -lc ${shellEscape(command)}`;
+    const args = ["run", "-d"];
+    if (job.infraNetwork) {
+      args.push("--network", job.infraNetwork);
+    }
+    for (const [key, value] of Object.entries(job.injectedEnv)) {
+      args.push("-e", `${key}=${value}`);
+    }
+    args.push("-p", `${port}:${containerPort}`, "-v", `${job.workspacePath}:/workspace`, "-w", "/workspace", image, "sh", "-lc", command);
     appendLog(job, `Attempting docker runtime boot: ${command}`);
 
-    const start = await runShell(`${dockerCommand} > /tmp/os-layer-${job.id}.cid`, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
-    if (!start) {
+    const { ok, output } = await runBinary("docker", args, DATA_ROOT, job, DOCKER_START_TIMEOUT_MS);
+    if (!ok) {
       appendLog(job, "Docker runtime start command failed.");
       continue;
     }
 
-    const cidPath = `/tmp/os-layer-${job.id}.cid`;
-    let containerId = "";
-    try {
-      containerId = (await fs.readFile(cidPath, "utf8")).trim();
-    } catch {
-      containerId = "";
-    }
+    const containerId = output.trim();
     if (!containerId) {
       appendLog(job, "Docker returned empty container id.");
       continue;
@@ -754,7 +752,7 @@ async function startRuntimeDocker(job: StoredRunJob, commands: string[]) {
     }
 
     appendLog(job, "Docker runtime did not become healthy in time. Cleaning up container.");
-    await runShell(`docker rm -f ${containerId}`, DATA_ROOT, job, 15000);
+    await runBinary("docker", ["rm", "-f", containerId], DATA_ROOT, job, 15000);
   }
 
   return null;

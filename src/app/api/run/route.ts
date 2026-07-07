@@ -3,6 +3,8 @@ import { detectRuntime } from '@/lib/runtimes';
 
 import { createRunJob, listRunJobs } from "./store";
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+
 interface RunRequestBody {
   repo?: {
     id: number;
@@ -41,6 +43,10 @@ export async function POST(request: Request) {
 
     if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    if (!GITHUB_URL_REGEX.test(repo.url)) {
+      return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
