@@ -92,6 +92,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         <button
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label="Share"
         >
           <Share2 className="h-4 w-4" />
         </button>
@@ -384,6 +385,7 @@ export function StoryOverlay({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+          aria-label="Close story"
         >
           <X className="h-5 w-5" />
         </button>
@@ -418,10 +420,16 @@ export function StoryOverlay({
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+              aria-label="Like story"
+            >
               <Heart className="h-5 w-5" />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+              aria-label="Share story"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
