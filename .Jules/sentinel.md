@@ -1,0 +1,4 @@
+## 2025-02-18 - Child Process Command Injection Vulnerability in Worker
+**Vulnerability:** Unsanitized user inputs `githubUrl` and `repoId` from the background queue were passed directly into shell-spawned processes (`execAsync`/`exec`) in `build-engine/worker.ts`, leading to potential command injection.
+**Learning:** Shell-executing wrappers like `child_process.exec` interpret characters like `;`, `&`, and `|` as shell control operations. Relying on API-level validations is not defense-in-depth, as messages directly published to background queues can bypass API layer checks.
+**Prevention:** Implement strict format and character validation checks (`GITHUB_URL_REGEX` and `APP_NAME_REGEX`) on critical string variables before passing them into shell commands, even within background workers or private task consumers.
