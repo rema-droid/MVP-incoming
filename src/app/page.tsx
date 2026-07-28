@@ -354,6 +354,7 @@ export default function Home() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search"
+                  aria-label="Search repositories"
                   className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-9 pr-4 text-sm text-white placeholder-zinc-500 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
                 />
               </div>
