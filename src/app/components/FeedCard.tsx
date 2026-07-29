@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, memo, useMemo } from "react";
 import {
   Heart,
   MessageCircle,
@@ -28,8 +28,7 @@ interface FeedCardProps {
 }
 
 /* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
+function getAIContent(repo: Repo, summary: ReturnType<typeof summarizeRepoForBeginners>) {
   const hooks = [
     `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
     `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
@@ -110,15 +109,16 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
-  const summary = summarizeRepoForBeginners(repo);
+const FeedCard = memo(function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+  // Memoize summary calculations to avoid repeated regex runs on render
+  const summary = useMemo(() => summarizeRepoForBeginners(repo), [repo]);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
   const cardStyle = { animationDelay: `${index * 80}ms` };
 
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -311,7 +311,9 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
   }
 
   return null;
-}
+});
+
+export default FeedCard;
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
