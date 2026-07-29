@@ -1,0 +1,4 @@
+## 2026-07-29 - Input Validation Gaps Between API Routes and Background Workers
+**Vulnerability:** Command Injection in Build Engine Worker
+**Learning:** Even when API routes enforce initial input validation on repository URLs and IDs, background processing queues (e.g., BullMQ) can serve as secondary entry points. If background workers do not independently re-validate job payloads before executing subprocesses, any queue injection or system misconfiguration can lead to complete host compromise via shell interpolation.
+**Prevention:** Always implement defense-in-depth by re-validating all inputs with strict regular expressions (`GITHUB_URL_REGEX`, `APP_NAME_REGEX`) right at the boundary of background worker execution blocks. Avoid shell execution (`shell: true` or `exec`) entirely where possible, and clean up workspace files using secure runtime APIs (e.g., `fs.promises.rm`) rather than shell-spawning commands like `rm -rf`.
