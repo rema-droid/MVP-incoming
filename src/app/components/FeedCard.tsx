@@ -72,6 +72,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             setLiked(!liked);
           }}
           className="flex items-center gap-1.5 transition-all"
+          aria-label={liked ? "Unlike repository" : "Like repository"}
         >
           <Heart
             className={`h-4 w-4 transition-all duration-300 ${
@@ -92,6 +93,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         <button
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label="Share repository"
         >
           <Share2 className="h-4 w-4" />
         </button>
@@ -371,6 +373,7 @@ export function StoryOverlay({
   onClose: () => void;
   onRun: () => void;
 }) {
+  const [liked, setLiked] = useState(false);
   const backdrop = getRepoBackdrop(repo);
   const summary = summarizeRepoForBeginners(repo);
 
@@ -384,6 +387,7 @@ export function StoryOverlay({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+          aria-label="Close story"
         >
           <X className="h-5 w-5" />
         </button>
@@ -418,10 +422,18 @@ export function StoryOverlay({
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
-              <Heart className="h-5 w-5" />
+            <button
+              onClick={() => setLiked(!liked)}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 transition-colors hover:bg-white/20 active:scale-95"
+              aria-label={liked ? "Unlike story" : "Like story"}
+            >
+              <Heart className={`h-5 w-5 transition-all duration-300 ${liked ? "fill-rose-500 text-rose-500 scale-110" : "text-white"}`} />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 transition-colors hover:bg-white/20 active:scale-95"
+              aria-label="Share story"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
