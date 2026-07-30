@@ -10,12 +10,30 @@ console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
   const repoId = job.data.repoId || job.data.id || 'unknown';
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+
+  // Validate inputs to prevent command injection via shell execution
+  if (!githubUrl || !GITHUB_URL_REGEX.test(githubUrl)) {
+    console.error(`[Worker] Invalid GitHub URL rejected: ${githubUrl}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Invalid GitHub URL format');
+    throw new Error(`Invalid GitHub URL: ${githubUrl}`);
+  }
+
+  if (!APP_NAME_REGEX.test(repoId.toString().toLowerCase())) {
+    console.error(`[Worker] Invalid Repo ID rejected: ${repoId}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Invalid Repo ID/App Name format');
+    throw new Error(`Invalid Repo ID: ${repoId}`);
+  }
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
@@ -26,7 +44,7 @@ export const worker = new Worker('Run Cloud', async job => {
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
       await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
@@ -56,14 +74,15 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
-    console.error(`[Worker] Job ${repoId} failed:`, error);
+  } catch (error: unknown) {
+    const err = error as Error & { code: number; stdout: string; stderr: string };
+    console.error(`[Worker] Job ${repoId} failed:`, err);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
     // Save the actual CLI output to Redis so the user sees the real error!
-    const logDetails = error.stderr || error.stdout || error.message || String(error);
+    const logDetails = err.stderr || err.stdout || err.message || String(err);
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
-    throw error;
+    throw err;
   }
 }, { connection: redis });
