@@ -10,12 +10,19 @@ console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
 
   const githubUrl = job.data.url || job.data.githubUrl;
   const repoId = job.data.repoId || job.data.id || 'unknown';
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
+
+  if (typeof githubUrl !== 'string' || !GITHUB_URL_REGEX.test(githubUrl) || !APP_NAME_REGEX.test(appName)) {
+    throw new Error("Security violation: Invalid URL or app name format");
+  }
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
