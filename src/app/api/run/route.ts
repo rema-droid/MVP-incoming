@@ -34,12 +34,14 @@ export async function GET() {
   return NextResponse.json(jobs);
 }
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+
 export async function POST(request: Request) {
   try {
     const body: RunRequestBody = await request.json();
     const repo = body.repo;
 
-    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
+    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url || !GITHUB_URL_REGEX.test(repo.url)) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
     }
 
