@@ -1,3 +1,4 @@
+import { useMemo, memo } from "react";
 import Image from "next/image";
 import { Package, Play, Sparkles, Star } from "lucide-react";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -104,13 +105,29 @@ export function getRepoBackdrop(repo: Repo) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
+const RepoCard = memo(function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
   const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
   const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
-  const eyebrow = friendlyCategoryLabel(repo);
-  const summary = summarizeRepoForBeginners(repo);
+
+  const summary = useMemo(() => summarizeRepoForBeginners(repo), [repo]);
+
+  // Performance Optimization: Lazy-evaluate backdrop, palette and category labels
+  // strictly for the 'widget' variant, preventing expensive string encoding,
+  // palette resolution, and regex category matching for the standard 'list' variant.
+  const backdrop = useMemo(() => {
+    if (variant !== "widget") return "";
+    return getRepoBackdrop(repo);
+  }, [repo, variant]);
+
+  const palette = useMemo(() => {
+    if (variant !== "widget") return paletteMap.default;
+    return getRepoPalette(repo);
+  }, [repo, variant]);
+
+  const eyebrow = useMemo(() => {
+    if (variant !== "widget") return "";
+    return friendlyCategoryLabel(repo);
+  }, [repo, variant]);
 
   if (variant === "widget") {
     return (
@@ -306,4 +323,6 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
       </div>
     </article>
   );
-}
+});
+
+export default RepoCard;

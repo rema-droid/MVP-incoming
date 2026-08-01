@@ -279,14 +279,14 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [activeTab, fetchRunJobs]);
 
-  function handleRepoView(repo: Repo) {
+  const handleRepoView = useCallback((repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedFromTab(activeTab);
     setSelectedRepo(repo);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab]);
 
-  async function handleRunRepo(repo: Repo) {
+  const handleRunRepo = useCallback(async (repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedRepo(null);
     setSelectedFromTab(activeTab);
@@ -305,7 +305,7 @@ export default function Home() {
       setIsRunQueueLoading(false);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab, fetchRunJobs]);
 
   const isInSearchMode = searchQuery.trim().length > 0 && searchResults.length > 0;
   const displayRepos = isInSearchMode ? searchResults : feedRepos;
@@ -326,8 +326,19 @@ export default function Home() {
   const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
   const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
   const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
-  const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
+
+  // Performance Optimization: Only perform heavy categorizations/discover filtering
+  // when we are actually on the respective tab and not in search mode.
+  const categorizedGroups = useMemo(() => {
+    if (activeTab !== "categories" || isInSearchMode) return {};
+    return groupReposByCategory(displayRepos);
+  }, [activeTab, isInSearchMode, displayRepos]);
+
+  const discoverSections = useMemo(() => {
+    if (activeTab !== "discover" || isInSearchMode) return [];
+    return buildDiscoverSections(feedRepos);
+  }, [activeTab, isInSearchMode, feedRepos]);
+
   const canShowSeeAll = listRepos.length > 32;
 
   return (
