@@ -1,0 +1,3 @@
+## 2025-08-01 - Keyboard Focus Gaps in Screen-Reader-Only Elements and Icon-Only Interactive Buttons
+**Learning:** Screen-reader-only inputs (`sr-only`) remain in the keyboard focus order (tabindex), but their visual focus styling is completely lost when the standard elements are hidden, resulting in a disconnected keyboard navigation experience. Furthermore, icon-only interactive buttons in immersive overlays (like `StoryOverlay`) and feed cards lack descriptive labels and focus ring outlines.
+**Action:** Always apply visual peer-focus indicator styles to custom toggle overlays using `peer-focus-visible` classes, and ensure all icon-only buttons receive descriptive `aria-label` attributes and native or custom `focus-visible` outlines.

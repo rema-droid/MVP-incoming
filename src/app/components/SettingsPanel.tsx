@@ -70,7 +70,7 @@ function Toggle({
           id={id}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only"
+          className="sr-only peer"
           role="switch"
           aria-checked={checked}
           aria-label={label}
@@ -78,7 +78,7 @@ function Toggle({
         <div
           className={`h-6 w-11 rounded-full transition-colors duration-200 ${
             checked ? "bg-blue-500" : "bg-black/30 shadow-inner block border border-white/5"
-          }`}
+          } peer-focus-visible:ring-2 peer-focus-visible:ring-blue-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#042a33]`}
         />
         <div
           className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
