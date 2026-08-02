@@ -1,0 +1,3 @@
+## 2025-02-14 - Lazy Evaluation of Unused Metadata Calculations in List-variant Repo Cards
+**Learning:** Instantiating and invoking functions like `friendlyCategoryLabel`, `getRepoPalette`, and `getRepoBackdrop` on every list element when they are exclusively used by the `"widget"` variant results in wasteful CPU allocations, regex parsing, and template-literal SVG assembly. By wrapping them in the specific block-scope, we achieve zero overhead for standard list items.
+**Action:** Always check if variables declared at the top of a component are utilized by all visual variants/return-paths, and postpone their initialization/invocation to the conditional branches where they are actually consumed.
