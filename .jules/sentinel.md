@@ -1,0 +1,4 @@
+## 2025-08-02 - Command Injection in Repository Build Engine
+**Vulnerability:** Command injection in background build-engine worker via unsanitized `githubUrl` and `repoId` fields used inside `exec` shell execution.
+**Learning:** High-privilege API payloads that route to asynchronous background processors/queues must be strictly validated at both the REST API layer and the background execution/worker layer. Relying solely on type checks (e.g., matching a schema or basic object properties) leaves the background environment vulnerable to shell execution when inputs are directly concatenated into command strings.
+**Prevention:** Enforce strict validation via highly targeted regular expressions (such as `GITHUB_URL_REGEX` and `APP_NAME_REGEX`) on both the API ingress layer and prior to any command/subprocess invocations.
