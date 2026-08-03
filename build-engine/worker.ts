@@ -3,12 +3,18 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { promises as fs } from 'fs';
 
 const execAsync = promisify(exec);
 
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
+
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
+type CommandError = Error & { code: number; stdout: string; stderr: string };
 
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
@@ -19,6 +25,23 @@ export const worker = new Worker('Run Cloud', async job => {
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
+  // Ensure strict input validation for protection against command injection
+  if (!githubUrl || !GITHUB_URL_REGEX.test(githubUrl)) {
+    console.error(`[Worker] Aborting. Invalid GitHub URL: ${githubUrl}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Invalid GitHub URL format');
+    return;
+  }
+
+  if (!APP_NAME_REGEX.test(repoId.toString())) {
+    console.error(`[Worker] Aborting. Invalid Repository ID: ${repoId}`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Invalid Repository ID format');
+    return;
+  }
+
+  const tmpDir = `./tmp-${repoId}-${Date.now()}`;
+
   try {
     await redis.set(`repo:${repoId}:status`, 'building');
 
@@ -26,12 +49,11 @@ export const worker = new Worker('Run Cloud', async job => {
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
       await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
     // 2. Clone the repository
-    const tmpDir = `./tmp-${repoId}-${Date.now()}`;
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
     await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
 
@@ -43,20 +65,18 @@ export const worker = new Worker('Run Cloud', async job => {
     console.log(stdout); 
     if (stderr) console.error(stderr);
 
-    // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
-
-    // 5. Construct URL
+    // 4. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
     console.log(`[Worker] Successfully deployed to ${appUrl}`);
 
-    // 6. Report back to Redis
+    // 5. Report back to Redis
     // We update a key that the UI or API can watch
     await redis.set(`repo:${repoId}:url`, appUrl);
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as CommandError;
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
@@ -65,5 +85,13 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
+  } finally {
+    // 6. Guarantee local directory cleanup to prevent command injection and local disk leaks
+    try {
+      console.log(`[Worker] Cleaning up workspace ${tmpDir}...`);
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error(`[Worker] Warning: Failed to clean up ${tmpDir}:`, cleanupError);
+    }
   }
 }, { connection: redis });
