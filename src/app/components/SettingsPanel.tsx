@@ -70,13 +70,13 @@ function Toggle({
           id={id}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only"
+          className="sr-only peer"
           role="switch"
           aria-checked={checked}
           aria-label={label}
         />
         <div
-          className={`h-6 w-11 rounded-full transition-colors duration-200 ${
+          className={`h-6 w-11 rounded-full transition-colors duration-200 outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-zinc-950 ${
             checked ? "bg-blue-500" : "bg-black/30 shadow-inner block border border-white/5"
           }`}
         />
@@ -129,7 +129,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ theme: opt.value })}
                   aria-pressed={settings.theme === opt.value}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
                     settings.theme === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
@@ -161,7 +161,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ fontSize: opt.value })}
                   aria-pressed={settings.fontSize === opt.value}
-                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
                     settings.fontSize === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
