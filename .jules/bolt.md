@@ -1,0 +1,3 @@
+## 2026-04-01 - Redundant Heavy Calculations in List Component Render Items
+**Learning:** React list components (like `RepoCard`) that support multiple visual variants can incur significant redundant overhead if all calculations (like SVG backdrop generation and category matching regexes) are executed unconditionally on every render. This was especially pronounced for list card variants that never display or utilize the heavy SVG backdrop.
+**Action:** Defer and isolate complex calculations within conditional blocks matching the specific visual variants where they are required, ensuring zero overhead on lighter variants.
