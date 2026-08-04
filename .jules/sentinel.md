@@ -1,0 +1,4 @@
+## 2026-08-04 - Secure Proxying to Untrusted Sandboxes
+**Vulnerability:** Reverse proxies that forward unmodified headers to untrusted sandbox environments can inadvertently leak users' active session credentials (like `cookie`, `authorization`, and `proxy-authorization`). Concurrently, allowing untrusted backends to return response headers like `set-cookie` can enable cookie-tossing/session hijacking on the host domain.
+**Learning:** It is crucial to strictly strip credential headers before outgoing requests hit any sandboxed or user-controlled services, and to sanitize incoming responses from those services by deleting domain-wide state headers such as `set-cookie`.
+**Prevention:** Consolidate proxy operations into a centralized, hard-to-bypass utility (e.g., `src/lib/proxy.ts`) that enforces strict header blocklists in both request and response directions.
