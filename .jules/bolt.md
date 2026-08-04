@@ -1,0 +1,3 @@
+## 2025-02-18 - Hoisting and Caching Natural Language Summaries
+**Learning:** Computing user-friendly summaries and classification labels from GitHub descriptions on every single render is highly expensive, especially when generating large lists (e.g. 100 repositories) where each list card is rendered multiple times. Unhoisted substitution tables (like SWAPS with 75 regex items) cause continuous memory reallocation and pattern recompilation on every call, creating a significant garbage collection and execution bottleneck.
+**Action:** Always hoist non-trivial translation dictionaries and regular expressions to module scope. Add O(1) stable caching mechanisms (like FIFO/LRU) keyed by entity IDs to bypass expensive string-manipulation and classification pipelines.
