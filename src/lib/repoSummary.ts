@@ -10,7 +10,28 @@ type RepoLike = {
   language?: string;
   topics?: string[];
   title?: string;
+  id?: number | string;
 };
+
+// ── Caching infrastructure to prevent redundant natural language and metadata processing ──
+const summaryCache = new Map<string | number, RepoSummary>();
+const friendlyCategoryCache = new Map<string | number, string>();
+
+function getCacheKey(repo: RepoLike): string | number {
+  if (repo.id !== undefined && repo.id !== null) {
+    return repo.id;
+  }
+  return `${repo.title || ""}:${repo.plainEnglishDescription || ""}`;
+}
+
+export function manageCache<K, V>(cacheMap: Map<K, V>, maxCapacity = 500) {
+  if (cacheMap.size > maxCapacity) {
+    const firstKey = cacheMap.keys().next().value;
+    if (firstKey !== undefined) {
+      cacheMap.delete(firstKey);
+    }
+  }
+}
 
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, " ").trim();
@@ -125,6 +146,10 @@ function uniqNonEmpty(items: string[]): string[] {
 
 /* ── Short summary (card-level) ── */
 export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
+  const cacheKey = getCacheKey(repo);
+  const cached = summaryCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
@@ -233,31 +258,46 @@ export function summarizeRepoForBeginners(repo: RepoLike): RepoSummary {
 
   const deep = `What is it, in plain words:\n${short}\n\nWho would like this:\n${bestForLines}\n\nHow to try it:\n${useSentence}`;
 
-  return {
+  const summary = {
     typeLabel,
     short,
     deep,
     goodForPills,
   };
+
+  summaryCache.set(cacheKey, summary);
+  manageCache(summaryCache);
+
+  return summary;
 }
 
 /** Friendly category label — never a programming language name. */
 export function friendlyCategoryLabel(repo: RepoLike): string {
+  const cacheKey = getCacheKey(repo);
+  const cached = friendlyCategoryCache.get(cacheKey);
+  if (cached) return cached;
+
   const raw = repo.plainEnglishDescription || "";
   const topicsText = (repo.topics || []).join(" ");
   const combined =
     `${repo.title || ""} ${raw} ${topicsText}`.toLowerCase();
 
-  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) return "Smart helper";
-  if (/(react|next|vue|web|website|browser)/.test(combined)) return "Website";
-  if (/(api|server|backend)/.test(combined)) return "Behind-the-scenes worker";
-  if (/(data|analytics|chart)/.test(combined)) return "Numbers and charts";
-  if (/(game|play)/.test(combined)) return "Fun stuff";
-  if (/(cli|terminal|command)/.test(combined)) return "Text-based tool";
-  if (/(image|video|audio|media|design|creative)/.test(combined)) return "Creative tool";
-  if (/(security|auth|encryption|privacy)/.test(combined)) return "Safety and privacy";
-  if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) return "Setup helper";
-  return "Community tool";
+  let label = "Community tool";
+
+  if (/(ai|llm|chat|gpt|assistant|agent)/.test(combined)) label = "Smart helper";
+  else if (/(react|next|vue|web|website|browser)/.test(combined)) label = "Website";
+  else if (/(api|server|backend)/.test(combined)) label = "Behind-the-scenes worker";
+  else if (/(data|analytics|chart)/.test(combined)) label = "Numbers and charts";
+  else if (/(game|play)/.test(combined)) label = "Fun stuff";
+  else if (/(cli|terminal|command)/.test(combined)) label = "Text-based tool";
+  else if (/(image|video|audio|media|design|creative)/.test(combined)) label = "Creative tool";
+  else if (/(security|auth|encryption|privacy)/.test(combined)) label = "Safety and privacy";
+  else if (/(docker|kubernetes|cloud|devops|infra)/.test(combined)) label = "Setup helper";
+
+  friendlyCategoryCache.set(cacheKey, label);
+  manageCache(friendlyCategoryCache);
+
+  return label;
 }
 
 export type LongBeginnerStory = {
