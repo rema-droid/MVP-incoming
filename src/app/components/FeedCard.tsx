@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   Heart,
   MessageCircle,
@@ -110,7 +110,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+function FeedCardComponent({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
@@ -312,6 +312,11 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   return null;
 }
+
+// Wrap FeedCard with React.memo to prevent unnecessary re-renders when parent states change,
+// which is especially important for the infinite feed view or heavy tab rendering layouts.
+const FeedCard = memo(FeedCardComponent);
+export default FeedCard;
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({

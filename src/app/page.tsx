@@ -279,14 +279,17 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [activeTab, fetchRunJobs]);
 
-  function handleRepoView(repo: Repo) {
+  // Wrap handleRepoView and handleRunRepo in useCallback to stabilize referential identity.
+  // This allows the memoized RepoCard and FeedCard child components to skip unnecessary re-renders
+  // when state updates occur in this parent component (e.g. interval polling for run queue jobs).
+  const handleRepoView = useCallback((repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedFromTab(activeTab);
     setSelectedRepo(repo);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab]);
 
-  async function handleRunRepo(repo: Repo) {
+  const handleRunRepo = useCallback(async (repo: Repo) => {
     saveLocalRepo("os-layer-viewed", repo, 20);
     setSelectedRepo(null);
     setSelectedFromTab(activeTab);
@@ -305,7 +308,7 @@ export default function Home() {
       setIsRunQueueLoading(false);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [activeTab, fetchRunJobs]);
 
   const isInSearchMode = searchQuery.trim().length > 0 && searchResults.length > 0;
   const displayRepos = isInSearchMode ? searchResults : feedRepos;
