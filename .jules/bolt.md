@@ -1,0 +1,3 @@
+## 2025-02-14 - React List Component Memoization
+**Learning:** In React applications with keystroke-based parent state updates (like user search inputs) or continuous background state updates (such as interval polling for background jobs), rendering long list items is a massive performance bottleneck. Wrapping list items with `React.memo()` is only effective if parent handler props passed down to them maintain a stable referential identity across renders.
+**Action:** Always wrap heavy list item components with `React.memo()` and stabilize any parent handler props passed to them using `useCallback()` to successfully skip redundant component re-renders.
