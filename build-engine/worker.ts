@@ -3,12 +3,17 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs/promises';
 
 const execAsync = promisify(exec);
 
 console.log("!!! HACKER ENGINE ONLINE - WAITING FOR JOBS !!!");
 
 const redis = new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
+
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
 
 export const worker = new Worker('Run Cloud', async job => {
   console.log(">>> RECEIVED REPO:", job.data.url || job.data.githubUrl);
@@ -17,7 +22,17 @@ export const worker = new Worker('Run Cloud', async job => {
   const repoId = job.data.repoId || job.data.id || 'unknown';
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
 
+  // Security check: Validate URL and repository ID to protect background execution
+  if (typeof githubUrl !== 'string' || !GITHUB_URL_REGEX.test(githubUrl)) {
+    throw new Error('Security Error: Invalid GitHub URL format');
+  }
+  if (!APP_NAME_REGEX.test(repoId.toString().toLowerCase())) {
+    throw new Error('Security Error: Invalid repository ID format');
+  }
+
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
+
+  let tmpDir: string | null = null;
 
   try {
     await redis.set(`repo:${repoId}:status`, 'building');
@@ -26,12 +41,12 @@ export const worker = new Worker('Run Cloud', async job => {
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
       await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
     // 2. Clone the repository
-    const tmpDir = `./tmp-${repoId}-${Date.now()}`;
+    tmpDir = path.join(process.cwd(), `tmp-${repoId}-${Date.now()}`);
     console.log(`[Worker] Cloning ${githubUrl} into ${tmpDir}...`);
     await execAsync(`git clone --depth 1 ${githubUrl} ${tmpDir}`);
 
@@ -43,9 +58,6 @@ export const worker = new Worker('Run Cloud', async job => {
     console.log(stdout); 
     if (stderr) console.error(stderr);
 
-    // 4. Cleanup
-    await execAsync(`rm -rf ${tmpDir}`);
-
     // 5. Construct URL
     const appUrl = `https://${appName}.fly.dev`;
     console.log(`[Worker] Successfully deployed to ${appUrl}`);
@@ -56,7 +68,8 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as Error & { code: number; stdout: string; stderr: string };
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
@@ -65,5 +78,14 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:logs`, String(logDetails).slice(-1000));
     
     throw error;
+  } finally {
+    if (tmpDir) {
+      try {
+        await fs.rm(tmpDir, { recursive: true, force: true });
+        console.log(`[Worker] Cleaned up temporary directory: ${tmpDir}`);
+      } catch (err) {
+        console.error(`[Worker] Failed to cleanup temporary directory ${tmpDir}:`, err);
+      }
+    }
   }
 }, { connection: redis });
