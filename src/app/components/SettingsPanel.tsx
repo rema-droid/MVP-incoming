@@ -70,13 +70,13 @@ function Toggle({
           id={id}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only"
+          className="sr-only peer"
           role="switch"
           aria-checked={checked}
           aria-label={label}
         />
         <div
-          className={`h-6 w-11 rounded-full transition-colors duration-200 ${
+          className={`h-6 w-11 rounded-full transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#042a33] ${
             checked ? "bg-blue-500" : "bg-black/30 shadow-inner block border border-white/5"
           }`}
         />
@@ -92,6 +92,7 @@ function Toggle({
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
+  const [cleared, setCleared] = useState(false);
 
   function update(partial: Partial<Settings>) {
     const next = { ...settings, ...partial };
@@ -129,7 +130,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ theme: opt.value })}
                   aria-pressed={settings.theme === opt.value}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#042a33] ${
                     settings.theme === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
@@ -161,7 +162,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ fontSize: opt.value })}
                   aria-pressed={settings.fontSize === opt.value}
-                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#042a33] ${
                     settings.fontSize === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
@@ -272,16 +273,24 @@ export default function SettingsPanel() {
           <Shield className="h-4 w-4" /> Privacy
         </h3>
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.removeItem("os-layer-viewed");
-              alert("Viewed apps history cleared.");
-            }}
-            className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/20"
-          >
-            Clear Viewed History
-          </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("os-layer-viewed");
+                setCleared(true);
+                setTimeout(() => setCleared(false), 3000);
+              }}
+              className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#042a33]"
+            >
+              Clear Viewed History
+            </button>
+            {cleared && (
+              <span className="text-sm font-medium text-emerald-400 animate-in fade-in slide-in-from-left-2 duration-300">
+                ✓ History cleared!
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-[13px] text-zinc-500">
             This will permanently remove locally stored history on this device.
           </p>
