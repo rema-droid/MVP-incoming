@@ -1,0 +1,3 @@
+## 2026-08-06 - Optimize Repo Summary and Card Processing
+**Learning:** Postponing expensive metadata and SVG backdrop generation until they are explicitly needed (e.g. only in specific component variants) can yield massive performance improvements in list rendering, especially when combined with pre-compiled module-level Regular Expressions and a bounded FIFO cache for natural language processing functions.
+**Action:** Always check if heavy calculations, layout computations, or text replacement pipelines in nested items of a long list can be deferred, lazy-evaluated, or cached at a module level.
