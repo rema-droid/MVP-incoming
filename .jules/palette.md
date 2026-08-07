@@ -1,0 +1,3 @@
+## 2025-08-07 - Accessible Custom Form Toggles and Focus Indicators
+**Learning:** Custom UI switches styled with `sr-only` inputs must utilize Tailwind's sibling selectors (like `peer` on the input and `peer-focus-visible` on the wrapper) to guarantee keyboard focus indicators remain fully visible. General interactive controls like custom theme/font buttons require explicit focus-visible rings for WCAG 2.1 keyboard accessibility compliance.
+**Action:** Always verify custom wrapper components around hidden checkbox inputs are styled with focus visible rings using `peer-focus-visible` class-pairings.
