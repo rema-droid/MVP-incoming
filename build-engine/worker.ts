@@ -15,6 +15,17 @@ export const worker = new Worker('Run Cloud', async job => {
 
   const githubUrl = job.data.url || job.data.githubUrl;
   const repoId = job.data.repoId || job.data.id || 'unknown';
+
+  const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+  const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
+  if (!githubUrl || !GITHUB_URL_REGEX.test(githubUrl) || !APP_NAME_REGEX.test(String(repoId).toLowerCase())) {
+    console.error(`[Worker] Security block: Invalid format for githubUrl [${githubUrl}] or repoId [${repoId}]`);
+    await redis.set(`repo:${repoId}:status`, 'failed');
+    await redis.set(`repo:${repoId}:logs`, 'Security block: Invalid characters or format in URL or ID');
+    return;
+  }
+
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
 
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
@@ -26,7 +37,7 @@ export const worker = new Worker('Run Cloud', async job => {
     try {
       console.log(`[Worker] Creating Fly app: ${appName}...`);
       await execAsync(`flyctl apps create ${appName} --machines --org personal`, { env: { ...process.env, FLY_API_TOKEN: process.env.FLY_API_TOKEN } });
-    } catch (e) {
+    } catch {
       console.log(`[Worker] App ${appName} might already exist, continuing...`);
     }
 
@@ -56,7 +67,8 @@ export const worker = new Worker('Run Cloud', async job => {
     await redis.set(`repo:${repoId}:status`, 'running');
     
     console.log(`[Worker] Job ${repoId} completed successfully.`);
-  } catch (error: any) {
+  } catch (errorUnknown) {
+    const error = errorUnknown as Error & { stdout?: string; stderr?: string };
     console.error(`[Worker] Job ${repoId} failed:`, error);
     await redis.set(`repo:${repoId}:status`, 'failed');
     
