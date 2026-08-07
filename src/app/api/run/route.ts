@@ -43,6 +43,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
     }
 
+    const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+    const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+
+    if (!GITHUB_URL_REGEX.test(repo.url) || !APP_NAME_REGEX.test(String(repo.id))) {
+      return NextResponse.json({ error: 'Security validation failed: Invalid characters or format in URL or ID' }, { status: 400 });
+    }
+
     // TODO: In a real implementation, we would clone the repo here and get the file list.
     // For now, we'll simulate it to test the runtime detection.
     const repoFiles = ['package.json', 'next.config.js', 'README.md'];

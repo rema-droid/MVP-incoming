@@ -1,0 +1,4 @@
+## 2025-08-07 - Command Injection in Background Worker and REST Endpoints
+**Vulnerability:** Unsanitized user inputs `url` and `repoId` were passed directly to shell execution commands (`git clone`, `flyctl`) via `execAsync` in `build-engine/worker.ts` and `src/app/api/run/route.ts`, allowing arbitrary command execution on the host machine.
+**Learning:** Although REST-level schema validation of parameters like `repo.id` was present, the worker assumed queue messages were safe and executed them directly within shell strings, exposing a classic command injection entry point.
+**Prevention:** Always enforce strict input validation at both the boundary/REST API level and the worker consumption level using rigid regex patterns (`GITHUB_URL_REGEX` and `APP_NAME_REGEX`) that permit only safe, non-shell characters before executing system commands.
