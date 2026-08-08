@@ -17,6 +17,13 @@ export const worker = new Worker('Run Cloud', async job => {
   const repoId = job.data.repoId || job.data.id || 'unknown';
   const appName = `gitmurph-${repoId.toString().toLowerCase()}`;
 
+  const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+  const APP_NAME_REGEX = /^[a-zA-Z0-9-]+$/;
+
+  if (!GITHUB_URL_REGEX.test(githubUrl) || !APP_NAME_REGEX.test(repoId.toString())) {
+    throw new Error('Invalid repository URL or ID format');
+  }
+
   console.log(`[Worker] Starting build for ${repoId} [${githubUrl}]...`);
 
   try {
