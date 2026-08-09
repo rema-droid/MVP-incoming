@@ -59,9 +59,19 @@ function getTrendingCopy(repo: Repo) {
 }
 
 /* ── Engagement Bar ── */
-function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
-  const [liked, setLiked] = useState(false);
+function EngagementBar({ repo, onRun, liked, onLikeToggle }: { repo: Repo; onRun: () => void; liked: boolean; onLikeToggle: () => void }) {
+  const [copied, setCopied] = useState(false);
   const likeCount = Math.floor(repo.stars / 100) + (liked ? 1 : 0);
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(repo.url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
 
   return (
     <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
@@ -69,9 +79,11 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setLiked(!liked);
+            onLikeToggle();
           }}
-          className="flex items-center gap-1.5 transition-all"
+          className="flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded-md p-1"
+          aria-label={liked ? "Unlike this app" : "Like this app"}
+          aria-pressed={liked}
         >
           <Heart
             className={`h-4 w-4 transition-all duration-300 ${
@@ -84,24 +96,35 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded-md p-1"
+          aria-label="View comments"
         >
           <MessageCircle className="h-4 w-4" />
           <span className="text-[12px] font-medium text-zinc-500">{Math.floor(repo.stars / 500)}</span>
         </button>
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
-          <Share2 className="h-4 w-4" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded-md p-1"
+            aria-label="Share this app"
+            aria-pressed={copied}
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+          {copied && (
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 rounded bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-md animate-in fade-in zoom-in-90 duration-150">
+              Copied!
+            </span>
+          )}
+        </div>
       </div>
       <button
         onClick={(e) => {
           e.stopPropagation();
           onRun();
         }}
-        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
+        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+        aria-label={`Try running ${repo.title}`}
       >
         <Play className="h-3 w-3 fill-blue-400" /> Try it now
       </button>
@@ -110,7 +133,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+export default function FeedCard({ repo, variant, index, onView, onRun, liked, onLikeToggle }: FeedCardProps & { liked: boolean; onLikeToggle: () => void }) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
@@ -150,7 +173,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
           <p className="text-[14px] text-zinc-200 leading-relaxed mb-2">{ai.hook}</p>
           <p className="text-[13px] text-zinc-400 leading-relaxed line-clamp-4">{ai.short}</p>
 
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={onRun} liked={liked} onLikeToggle={onLikeToggle} />
         </div>
       </article>
     );
@@ -193,7 +216,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
             {summary.goodForPills[0] && (
               <p className="text-[11px] text-zinc-500 mt-2">✦ {summary.goodForPills[0]}</p>
             )}
-            <EngagementBar repo={repo} onRun={onRun} />
+            <EngagementBar repo={repo} onRun={onRun} liked={liked} onLikeToggle={onLikeToggle} />
           </div>
         </div>
       </article>
@@ -237,7 +260,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
                 ))}
               </div>
             )}
-            <EngagementBar repo={repo} onRun={onRun} />
+            <EngagementBar repo={repo} onRun={onRun} liked={liked} onLikeToggle={onLikeToggle} />
           </div>
         </div>
       </article>
@@ -273,7 +296,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
               </div>
             </div>
           </div>
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={onRun} liked={liked} onLikeToggle={onLikeToggle} />
         </div>
       </article>
     );
@@ -304,7 +327,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
               <p className="text-[11px] text-zinc-500">{repo.owner}</p>
             </div>
           </div>
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={onRun} liked={liked} onLikeToggle={onLikeToggle} />
         </div>
       </article>
     );
@@ -326,7 +349,9 @@ export function StoryCircle({
   return (
     <button
       onClick={onClick}
-      className="flex shrink-0 flex-col items-center gap-1.5 group"
+      className="flex shrink-0 flex-col items-center gap-1.5 group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded-xl p-1"
+      aria-label={`View explainer video for ${repo.title}`}
+      aria-pressed={isActive}
     >
       <div
         className={`relative h-16 w-16 rounded-full p-[2px] transition-all duration-300 ${
@@ -366,13 +391,28 @@ export function StoryOverlay({
   repo,
   onClose,
   onRun,
+  liked,
+  onLikeToggle,
 }: {
   repo: Repo;
   onClose: () => void;
   onRun: () => void;
+  liked: boolean;
+  onLikeToggle: () => void;
 }) {
   const backdrop = getRepoBackdrop(repo);
   const summary = summarizeRepoForBeginners(repo);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(repo.url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
@@ -383,7 +423,8 @@ export function StoryOverlay({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+          aria-label="Close story"
         >
           <X className="h-5 w-5" />
         </button>
@@ -414,16 +455,37 @@ export function StoryOverlay({
           <div className="flex items-center gap-3">
             <button
               onClick={onRun}
-              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95"
+              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+              aria-label={`Try running ${repo.title}`}
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
-              <Heart className="h-5 w-5" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLikeToggle();
+              }}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none transition-all duration-300"
+              aria-label={liked ? "Unlike this app" : "Like this app"}
+              aria-pressed={liked}
+            >
+              <Heart className={`h-5 w-5 transition-all duration-300 ${liked ? "fill-rose-500 text-rose-500 scale-110" : ""}`} />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
-              <Share2 className="h-5 w-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={handleShare}
+                className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 focus-visible:outline-none transition-all duration-300"
+                aria-label="Share this app"
+                aria-pressed={copied}
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              {copied && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 z-20 rounded bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-md animate-in fade-in zoom-in-90 duration-150 whitespace-nowrap">
+                  Copied!
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -28,6 +28,19 @@ const variantPattern: FeedCardVariant[] = [
 
 export default function FeedView({ repos, isLoading, onRepoView, onRun }: FeedViewProps) {
   const [activeStory, setActiveStory] = useState<Repo | null>(null);
+  const [likedRepoIds, setLikedRepoIds] = useState<Set<number>>(new Set());
+
+  const handleLikeToggle = (repoId: number) => {
+    setLikedRepoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(repoId)) {
+        next.delete(repoId);
+      } else {
+        next.add(repoId);
+      }
+      return next;
+    });
+  };
 
   const storyRepos = repos.slice(0, 12);
 
@@ -104,6 +117,8 @@ export default function FeedView({ repos, isLoading, onRepoView, onRun }: FeedVi
             index={idx}
             onView={() => onRepoView(repo)}
             onRun={() => onRun(repo)}
+            liked={likedRepoIds.has(repo.id)}
+            onLikeToggle={() => handleLikeToggle(repo.id)}
           />
         ))}
       </div>
@@ -124,6 +139,8 @@ export default function FeedView({ repos, isLoading, onRepoView, onRun }: FeedVi
             onRun(activeStory);
             setActiveStory(null);
           }}
+          liked={likedRepoIds.has(activeStory.id)}
+          onLikeToggle={() => handleLikeToggle(activeStory.id)}
         />
       )}
     </div>
