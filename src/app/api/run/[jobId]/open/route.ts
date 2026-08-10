@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getRunJobTarget } from "../../store";
+import { proxyRequest } from "@/lib/proxy";
 
 async function proxy(request: Request, context: { params: Promise<{ jobId: string }> }, extraPath = "") {
   const { jobId } = await context.params;
@@ -9,27 +10,7 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
     return NextResponse.json({ error: "Runtime not ready" }, { status: 409 });
   }
 
-  const incoming = new URL(request.url);
-  const upstream = new URL(extraPath || "/", target.targetOrigin);
-  upstream.search = incoming.search;
-
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-  headers.delete("content-length");
-
-  const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
-  const response = await fetch(upstream, {
-    method: request.method,
-    headers,
-    body,
-    redirect: "manual",
-  });
-
-  const outHeaders = new Headers(response.headers);
-  outHeaders.delete("content-encoding");
-  outHeaders.delete("content-length");
-  outHeaders.set("x-os-layer-proxy", "run-cloud");
-  return new NextResponse(response.body, { status: response.status, headers: outHeaders });
+  return proxyRequest(request, target.targetOrigin, extraPath);
 }
 
 export async function GET(request: Request, context: { params: Promise<{ jobId: string }> }) {

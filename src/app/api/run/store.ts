@@ -217,11 +217,14 @@ function buildJobInfra(repo: RepoPayload, profile: RuntimeProfile, options?: Run
 
 function resolveInjectedEnv(options?: RunJobOptions) {
   const result: Record<string, string> = {};
+  const ENV_KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
   for (const [key, value] of Object.entries(options?.env || {})) {
-    if (!key) continue;
+    if (!key || !ENV_KEY_REGEX.test(key)) continue;
     result[key] = value;
   }
   for (const ref of options?.secretRefs || []) {
+    if (!ref || !ENV_KEY_REGEX.test(ref)) continue;
     const envName = `${SECRET_PREFIX}${ref.toUpperCase()}`;
     const value = process.env[envName];
     if (value) result[ref] = value;
