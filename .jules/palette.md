@@ -1,0 +1,3 @@
+## 2025-02-23 - Reusable Inline Stateful Button Feedback Pattern
+**Learning:** In a lightweight design system without a global toast/notification context, replacing native browser blocking `alert()` calls can be elegantly done by temporarily transforming the triggering button itself into an inline success state (e.g., green check icon and modified text, temporarily disabled). This keeps the visual flow native and non-blocking, eliminates external package bloat, and provides delightful, highly localized interactive feedback.
+**Action:** Use inline button state transformation (with a self-reverting 2-second `setTimeout`) as the primary mechanism for non-blocking action feedback when global toast infrastructure is absent.
