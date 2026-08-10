@@ -34,13 +34,41 @@ export async function GET() {
   return NextResponse.json(jobs);
 }
 
+const GITHUB_URL_REGEX = /^https:\/\/github\.com\/[a-zA-Z0-9-._]+\/[a-zA-Z0-9-._]+(\.git)?$/;
+const APP_NAME_REGEX = /^[a-z0-9-]+$/;
+const ENV_KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
 export async function POST(request: Request) {
   try {
     const body: RunRequestBody = await request.json();
     const repo = body.repo;
 
-    if (!repo || typeof repo.id !== 'number' || !repo.title || !repo.url) {
+    // Security check: Validate both repository URL and ID format to prevent command injection
+    if (
+      !repo ||
+      typeof repo.id !== 'number' ||
+      !repo.title ||
+      !repo.url ||
+      !GITHUB_URL_REGEX.test(repo.url) ||
+      !APP_NAME_REGEX.test(repo.id.toString())
+    ) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
+    }
+
+    // Security check: Validate environment variable keys and secret reference names
+    if (body.options?.env) {
+      for (const key of Object.keys(body.options.env)) {
+        if (!ENV_KEY_REGEX.test(key)) {
+          return NextResponse.json({ error: 'Invalid environment variable name' }, { status: 400 });
+        }
+      }
+    }
+    if (body.options?.secretRefs) {
+      for (const ref of body.options.secretRefs) {
+        if (!ENV_KEY_REGEX.test(ref)) {
+          return NextResponse.json({ error: 'Invalid secret reference name' }, { status: 400 });
+        }
+      }
     }
 
     // TODO: In a real implementation, we would clone the repo here and get the file list.
