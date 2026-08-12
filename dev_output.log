@@ -1,0 +1,12 @@
+
+> open-source-os@0.1.0 dev /app
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 562ms
+
+○ Compiling / ...
+ GET / 200 in 8.4s (next.js: 7.7s, application-code: 628ms)
+ GET /api/trending?category=discover 200 in 5.0s (next.js: 1624ms, application-code: 3.4s)
