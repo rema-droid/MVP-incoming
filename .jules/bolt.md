@@ -1,0 +1,5 @@
+## 2026-04-01 - Optimizing Natural Language Replacements & Metadata Calculations
+
+**Learning:** Chain-based or loop-based sequential RegExp string replacements in utility functions like `simplifyWords` perform multiple costly full-string scans and suffer from correctness bugs (double expansion risk). Combining mappings into a pre-compiled, length-sorted single-pass RegExp replacer provides an $O(1)$ pass over the string. Furthermore, in React applications with keyboard-driven re-renders, postponing expensive metadata calculations (e.g. SVG backdrops, category labels, and palettes) to where they are strictly needed (e.g. widget card variants instead of list variants) dramatically reduces memory consumption and execution time during interactive updates.
+
+**Action:** Always combine sequential string replacements into unified single-pass RegExp mappings, sort keys by descending length to avoid partial-matching bugs, implement bounded FIFO result caching for pure natural language processors, and defer heavy UI asset computing (like SVGs) to lazy evaluation contexts in specific component variants.
