@@ -11,6 +11,7 @@ import {
   Globe,
   Shield,
   Eye,
+  Check,
 } from "lucide-react";
 
 type Theme = "dark" | "light" | "system";
@@ -92,6 +93,7 @@ function Toggle({
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
+  const [historyCleared, setHistoryCleared] = useState(false);
 
   function update(partial: Partial<Settings>) {
     const next = { ...settings, ...partial };
@@ -274,13 +276,26 @@ export default function SettingsPanel() {
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <button
             type="button"
+            disabled={historyCleared}
             onClick={() => {
               localStorage.removeItem("os-layer-viewed");
-              alert("Viewed apps history cleared.");
+              setHistoryCleared(true);
+              setTimeout(() => setHistoryCleared(false), 2000);
             }}
-            className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/20"
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
+              historyCleared
+                ? "bg-emerald-500/10 text-emerald-500 cursor-default"
+                : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+            }`}
           >
-            Clear Viewed History
+            {historyCleared ? (
+              <>
+                <Check className="h-4 w-4" />
+                History Cleared!
+              </>
+            ) : (
+              "Clear Viewed History"
+            )}
           </button>
           <p className="mt-2 text-[13px] text-zinc-500">
             This will permanently remove locally stored history on this device.
