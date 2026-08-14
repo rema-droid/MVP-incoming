@@ -11,6 +11,7 @@ import {
   Globe,
   Shield,
   Eye,
+  Check,
 } from "lucide-react";
 
 type Theme = "dark" | "light" | "system";
@@ -70,13 +71,13 @@ function Toggle({
           id={id}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="sr-only"
+          className="sr-only peer"
           role="switch"
           aria-checked={checked}
           aria-label={label}
         />
         <div
-          className={`h-6 w-11 rounded-full transition-colors duration-200 ${
+          className={`h-6 w-11 rounded-full transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#031d24] ${
             checked ? "bg-blue-500" : "bg-black/30 shadow-inner block border border-white/5"
           }`}
         />
@@ -92,12 +93,21 @@ function Toggle({
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
+  const [cleared, setCleared] = useState(false);
 
   function update(partial: Partial<Settings>) {
     const next = { ...settings, ...partial };
     setSettings(next);
     saveSettings(next);
   }
+
+  const handleClearHistory = () => {
+    localStorage.removeItem("os-layer-viewed");
+    setCleared(true);
+    setTimeout(() => {
+      setCleared(false);
+    }, 2000);
+  };
 
   return (
     <div className="flex flex-col gap-8 pb-10">
@@ -129,7 +139,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ theme: opt.value })}
                   aria-pressed={settings.theme === opt.value}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     settings.theme === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
@@ -161,7 +171,7 @@ export default function SettingsPanel() {
                   type="button"
                   onClick={() => update({ fontSize: opt.value })}
                   aria-pressed={settings.fontSize === opt.value}
-                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     settings.fontSize === opt.value
                       ? "bg-white/10 text-white shadow-sm ring-1 ring-white/10"
                       : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
@@ -274,13 +284,22 @@ export default function SettingsPanel() {
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <button
             type="button"
-            onClick={() => {
-              localStorage.removeItem("os-layer-viewed");
-              alert("Viewed apps history cleared.");
-            }}
-            className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/20"
+            disabled={cleared}
+            onClick={handleClearHistory}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-offset-2 outline-none ${
+              cleared
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 cursor-default focus-visible:ring-emerald-500/50"
+                : "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-transparent focus-visible:ring-red-500/50"
+            }`}
           >
-            Clear Viewed History
+            {cleared ? (
+              <>
+                <Check className="h-4 w-4 shrink-0 animate-in fade-in zoom-in-75 duration-200" />
+                History Cleared
+              </>
+            ) : (
+              "Clear Viewed History"
+            )}
           </button>
           <p className="mt-2 text-[13px] text-zinc-500">
             This will permanently remove locally stored history on this device.
