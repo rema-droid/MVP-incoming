@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
   Search,
   Play,
@@ -13,7 +13,6 @@ import {
   Package,
   ArrowUpDown,
   Shield,
-  Clock,
   Flame,
   ChevronRight,
 } from "lucide-react";
@@ -28,11 +27,17 @@ interface MarketplaceViewProps {
 }
 
 /* ── Price & rating helpers ── */
+// Numeric helper avoids string parsing and replace operations during sorting
+function getPriceValue(stars: number): number {
+  if (stars > 100000) return 29.99;
+  if (stars > 50000) return 19.99;
+  if (stars > 10000) return 9.99;
+  return 0;
+}
+
 function getPrice(repo: Repo) {
-  if (repo.stars > 100000) return "$29.99";
-  if (repo.stars > 50000) return "$19.99";
-  if (repo.stars > 10000) return "$9.99";
-  return "Free";
+  const val = getPriceValue(repo.stars);
+  return val === 0 ? "Free" : `$${val}`;
 }
 
 function getRating(repo: Repo) {
@@ -87,16 +92,26 @@ const collections = [
 
 type SortOption = "popular" | "newest" | "price-low" | "price-high" | "stars";
 
+// Hoisted keyword mappings avoid creating array literals on every categorize call
+const CATEGORY_KEYWORDS: [string, string[]][] = [
+  ["ai", ["ai", "llm", "gpt", "neural", "transformer", "langchain", "agent"]],
+  ["web", ["react", "next", "vue", "angular", "frontend", "ui", "css", "web", "html"]],
+  ["mobile", ["mobile", "ios", "android", "flutter", "react-native", "swift"]],
+  ["devtools", ["cli", "sdk", "plugin", "developer", "devtool", "build", "testing", "debug"]],
+  ["data", ["data", "analytics", "pandas", "spark", "ml", "dataset", "chart"]],
+  ["creative", ["image", "video", "audio", "design", "creative", "editor", "media"]],
+  ["security", ["security", "auth", "oauth", "encryption", "privacy", "jwt"]],
+  ["cloud", ["docker", "kubernetes", "terraform", "cloud", "devops", "aws", "deploy"]],
+];
+
 function categorizeRepo(repo: Repo): string {
   const source = `${repo.title} ${repo.plainEnglishDescription} ${repo.language || ""} ${(repo.topics || []).join(" ")}`.toLowerCase();
-  if (["ai", "llm", "gpt", "neural", "transformer", "langchain", "agent"].some((k) => source.includes(k))) return "ai";
-  if (["react", "next", "vue", "angular", "frontend", "ui", "css", "web", "html"].some((k) => source.includes(k))) return "web";
-  if (["mobile", "ios", "android", "flutter", "react-native", "swift"].some((k) => source.includes(k))) return "mobile";
-  if (["cli", "sdk", "plugin", "developer", "devtool", "build", "testing", "debug"].some((k) => source.includes(k))) return "devtools";
-  if (["data", "analytics", "pandas", "spark", "ml", "dataset", "chart"].some((k) => source.includes(k))) return "data";
-  if (["image", "video", "audio", "design", "creative", "editor", "media"].some((k) => source.includes(k))) return "creative";
-  if (["security", "auth", "oauth", "encryption", "privacy", "jwt"].some((k) => source.includes(k))) return "security";
-  if (["docker", "kubernetes", "terraform", "cloud", "devops", "aws", "deploy"].some((k) => source.includes(k))) return "cloud";
+  for (let i = 0; i < CATEGORY_KEYWORDS.length; i++) {
+    const [cat, keywords] = CATEGORY_KEYWORDS[i];
+    for (let j = 0; j < keywords.length; j++) {
+      if (source.includes(keywords[j])) return cat;
+    }
+  }
   return "all";
 }
 
@@ -115,7 +130,8 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 /* ── Marketplace Card ── */
-function MarketplaceCard({
+// Memoized to avoid unnecessary re-renders when market search input changes
+const MarketplaceCard = memo(function MarketplaceCard({
   repo,
   badge,
   onView,
@@ -214,7 +230,7 @@ function MarketplaceCard({
       </div>
     </article>
   );
-}
+});
 
 /* ── Main MarketplaceView ── */
 export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }: MarketplaceViewProps) {
@@ -259,18 +275,10 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
         result.sort((a, b) => b.id - a.id);
         break;
       case "price-low":
-        result.sort((a, b) => {
-          const pa = getPrice(a) === "Free" ? 0 : parseFloat(getPrice(a).replace("$", ""));
-          const pb = getPrice(b) === "Free" ? 0 : parseFloat(getPrice(b).replace("$", ""));
-          return pa - pb;
-        });
+        result.sort((a, b) => getPriceValue(a.stars) - getPriceValue(b.stars));
         break;
       case "price-high":
-        result.sort((a, b) => {
-          const pa = getPrice(a) === "Free" ? 0 : parseFloat(getPrice(a).replace("$", ""));
-          const pb = getPrice(b) === "Free" ? 0 : parseFloat(getPrice(b).replace("$", ""));
-          return pb - pa;
-        });
+        result.sort((a, b) => getPriceValue(b.stars) - getPriceValue(a.stars));
         break;
       case "stars":
         result.sort((a, b) => b.stars - a.stars);
@@ -479,7 +487,7 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
             <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
           </div>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {trendingNow.map((repo, idx) => (
+            {trendingNow.map((repo) => (
               <MarketplaceCard
                 key={repo.id}
                 repo={repo}
