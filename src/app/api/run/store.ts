@@ -451,7 +451,7 @@ async function provisionInfraServices(job: StoredRunJob) {
   }
 
   const networkName = `oslayer-net-${job.id.slice(0, 12)}`;
-  await runShell(`docker network create ${networkName}`, DATA_ROOT, job, 20000);
+  await runBinary("docker", ["network", "create", networkName], DATA_ROOT, job, 20000);
   job.infraNetwork = networkName;
 
   if (services.postgres) {
@@ -514,11 +514,11 @@ async function provisionInfraServices(job: StoredRunJob) {
 
 async function cleanupInfraServices(job: StoredRunJob) {
   for (const container of job.serviceContainers) {
-    await runShell(`docker rm -f ${container}`, DATA_ROOT, job, 20000);
+    await runBinary("docker", ["rm", "-f", container], DATA_ROOT, job, 20000);
   }
   job.serviceContainers = [];
   if (job.infraNetwork) {
-    await runShell(`docker network rm ${job.infraNetwork}`, DATA_ROOT, job, 20000);
+    await runBinary("docker", ["network", "rm", job.infraNetwork], DATA_ROOT, job, 20000);
     job.infraNetwork = null;
   }
 }
@@ -754,7 +754,7 @@ async function startRuntimeDocker(job: StoredRunJob, commands: string[]) {
     }
 
     appendLog(job, "Docker runtime did not become healthy in time. Cleaning up container.");
-    await runShell(`docker rm -f ${containerId}`, DATA_ROOT, job, 15000);
+    await runBinary("docker", ["rm", "-f", containerId], DATA_ROOT, job, 15000);
   }
 
   return null;
