@@ -71,6 +71,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             e.stopPropagation();
             setLiked(!liked);
           }}
+          aria-label="Like"
           className="flex items-center gap-1.5 transition-all"
         >
           <Heart
@@ -84,6 +85,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
+          aria-label="Comments"
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
@@ -91,6 +93,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
+          aria-label="Share"
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           <Share2 className="h-4 w-4" />
@@ -383,6 +386,7 @@ export function StoryOverlay({
         {/* Close */}
         <button
           onClick={onClose}
+          aria-label="Close story"
           className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -418,10 +422,16 @@ export function StoryOverlay({
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label="Like story"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+            >
               <Heart className="h-5 w-5" />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label="Share story"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
