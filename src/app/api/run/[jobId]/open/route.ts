@@ -28,6 +28,10 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
   const outHeaders = new Headers(response.headers);
   outHeaders.delete("content-encoding");
   outHeaders.delete("content-length");
+  // Security: Strip sensitive headers from untrusted runtime sandbox responses
+  // to prevent cookie tossing, session hijacking, or credential prompt spoofing.
+  outHeaders.delete("set-cookie");
+  outHeaders.delete("www-authenticate");
   outHeaders.set("x-os-layer-proxy", "run-cloud");
   return new NextResponse(response.body, { status: response.status, headers: outHeaders });
 }
