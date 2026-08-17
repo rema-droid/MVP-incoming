@@ -29,7 +29,9 @@ export default function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className="group flex flex-1 flex-col items-center justify-center gap-1"
+              className="group flex flex-1 flex-col items-center justify-center gap-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
             >
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
