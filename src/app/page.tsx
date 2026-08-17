@@ -122,7 +122,9 @@ function buildDiscoverSections(repos: Repo[]): DiscoverSection[] {
     .filter((section) => section.repos.length > 0)
     .sort((a, b) => b.repos.length - a.repos.length);
 
-  const fallbackRepos = repos.filter((repo) => !sections.some((section) => section.repos.some((r) => r.id === repo.id)));
+  // Performance optimization: build a Set of assigned repo IDs to filter fallback repos in O(1) time
+  const assignedRepoIds = new Set(sections.flatMap((section) => section.repos.map((r) => r.id)));
+  const fallbackRepos = repos.filter((repo) => !assignedRepoIds.has(repo.id));
   if (fallbackRepos.length > 0) {
     sections.push({
       id: "discover",
