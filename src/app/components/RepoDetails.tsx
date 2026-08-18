@@ -93,6 +93,16 @@ export default function RepoDetails({
   }, []);
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     const owner = repo.owner?.trim();
     const name = repo.title?.trim();
     if (!owner || !name) return;
