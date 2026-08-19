@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   Heart,
   MessageCircle,
@@ -27,34 +27,49 @@ interface FeedCardProps {
   onRun: () => void;
 }
 
-/* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
-  const hooks = [
-    `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
-    `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
-    `${repo.title} is like finding a really useful tool in a drawer you forgot about — once you try it, you wonder how you lived without it.`,
-    `Here is why ${repo.owner || "people"} built ${repo.title} — and why thousands of fans keep coming back to it.`,
-    `In plain English: ${repo.title} is something that makes a hard job easy. Here is the full scoop.`,
-  ];
-  const randomHook = hooks[repo.id % hooks.length];
-  return { hook: randomHook, summary: summary.deep, short: summary.short };
+/* ── Module-hoisted static arrays & formatters to avoid re-allocations on render ── */
+const HOOK_FORMATTERS = [
+  (title: string) =>
+    `Imagine you had a helper that could handle ${title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
+  (title: string) =>
+    `Most people scroll past ${title} without knowing what it does. Let us break it down for you in normal words.`,
+  (title: string) =>
+    `${title} is like finding a really useful tool in a drawer you forgot about — once you try it, you wonder how you lived without it.`,
+  (title: string, owner?: string) =>
+    `Here is why ${owner || "people"} built ${title} — and why thousands of fans keep coming back to it.`,
+  (title: string) =>
+    `In plain English: ${title} is something that makes a hard job easy. Here is the full scoop.`,
+];
+
+const FACT_FORMATTERS = [
+  (title: string, stars: number) =>
+    `${title} has more than ${stars.toLocaleString()} fans — that is more popular than most apps people pay money for! And this one is completely free.`,
+  (title: string) =>
+    `The people behind ${title} come from all over the world. They have never met in person, but they work together online to build something useful for everyone.`,
+  (title: string) =>
+    `${title} is free software — which means every single instruction that makes it work is open for anyone to read. No secrets, no hidden tricks.`,
+  (title: string) =>
+    `You can try ${title} right now by tapping Run. We handle the setup — you just explore. No downloading, no installing, no headaches.`,
+  (title: string) =>
+    `Some of the biggest companies in the world use tools exactly like ${title} behind the scenes. Now you can try it yourself, for free, in your web browser.`,
+];
+
+const TRENDING_DELTAS = ["2.1K", "1.5K", "3.2K", "890", "1.8K", "4.1K"];
+
+/* ── AI-generated content (uses pre-calculated summary to avoid duplicate calls) ── */
+function getAIContent(repo: Repo, summary: ReturnType<typeof summarizeRepoForBeginners>) {
+  const formatter = HOOK_FORMATTERS[repo.id % HOOK_FORMATTERS.length];
+  const hook = formatter(repo.title, repo.owner);
+  return { hook, summary: summary.deep, short: summary.short };
 }
 
 function getDidYouKnow(repo: Repo) {
-  const facts = [
-    `${repo.title} has more than ${repo.stars.toLocaleString()} fans — that is more popular than most apps people pay money for! And this one is completely free.`,
-    `The people behind ${repo.title} come from all over the world. They have never met in person, but they work together online to build something useful for everyone.`,
-    `${repo.title} is free software — which means every single instruction that makes it work is open for anyone to read. No secrets, no hidden tricks.`,
-    `You can try ${repo.title} right now by tapping Run. We handle the setup — you just explore. No downloading, no installing, no headaches.`,
-    `Some of the biggest companies in the world use tools exactly like ${repo.title} behind the scenes. Now you can try it yourself, for free, in your web browser.`,
-  ];
-  return facts[repo.id % facts.length];
+  const formatter = FACT_FORMATTERS[repo.id % FACT_FORMATTERS.length];
+  return formatter(repo.title, repo.stars);
 }
 
 function getTrendingCopy(repo: Repo) {
-  const deltas = ["2.1K", "1.5K", "3.2K", "890", "1.8K", "4.1K"];
-  const delta = deltas[repo.id % deltas.length];
+  const delta = TRENDING_DELTAS[repo.id % TRENDING_DELTAS.length];
   return `${repo.title} picked up ${delta} new fans this week — people are loving this one`;
 }
 
@@ -110,7 +125,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
@@ -118,7 +133,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -312,6 +327,8 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   return null;
 }
+
+export default memo(FeedCard);
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
