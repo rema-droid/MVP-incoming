@@ -1,7 +1,7 @@
 "use client";
 
+import React, { useState } from "react";
 import Image from "next/image";
-import { useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -28,16 +28,18 @@ interface FeedCardProps {
 }
 
 /* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
-  const hooks = [
-    `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
-    `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
-    `${repo.title} is like finding a really useful tool in a drawer you forgot about — once you try it, you wonder how you lived without it.`,
-    `Here is why ${repo.owner || "people"} built ${repo.title} — and why thousands of fans keep coming back to it.`,
-    `In plain English: ${repo.title} is something that makes a hard job easy. Here is the full scoop.`,
-  ];
-  const randomHook = hooks[repo.id % hooks.length];
+// Hoisted formatter array to eliminate repetitive inline allocations on every card render
+const HOOK_FORMATTERS = [
+  (repo: Repo) => `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
+  (repo: Repo) => `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
+  (repo: Repo) => `${repo.title} is like finding a really useful tool in a drawer you forgot about — once you try it, you wonder how you lived without it.`,
+  (repo: Repo) => `Here is why ${repo.owner || "people"} built ${repo.title} — and why thousands of fans keep coming back to it.`,
+  (repo: Repo) => `In plain English: ${repo.title} is something that makes a hard job easy. Here is the full scoop.`,
+];
+
+function getAIContent(repo: Repo, summary: ReturnType<typeof summarizeRepoForBeginners>) {
+  // Pass pre-calculated summary directly to eliminate duplicate summarizeRepoForBeginners calls
+  const randomHook = HOOK_FORMATTERS[repo.id % HOOK_FORMATTERS.length](repo);
   return { hook: randomHook, summary: summary.deep, short: summary.short };
 }
 
@@ -110,7 +112,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
@@ -118,7 +120,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -312,6 +314,8 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   return null;
 }
+
+export default React.memo(FeedCard);
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
