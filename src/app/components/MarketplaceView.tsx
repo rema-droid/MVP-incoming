@@ -13,9 +13,9 @@ import {
   Package,
   ArrowUpDown,
   Shield,
-  Clock,
   Flame,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { type Repo, getRepoBackdrop } from "./RepoCard";
 import { summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -193,6 +193,7 @@ function MarketplaceCard({
               e.stopPropagation();
               onRun();
             }}
+            aria-label={`Run ${repo.title}`}
             className="flex h-[30px] items-center justify-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-[12px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
           >
             <Play className="h-3 w-3 fill-blue-400" /> Run
@@ -202,6 +203,7 @@ function MarketplaceCard({
               e.stopPropagation();
               window.open(repo.url, "_blank");
             }}
+            aria-label={`Get ${repo.title}`}
             className={`flex h-[30px] items-center justify-center rounded-lg border px-3 text-[12px] font-bold transition-all ${
               price === "Free"
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
@@ -361,6 +363,7 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
+              aria-pressed={activeCategory === cat.id}
               className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
                 activeCategory === cat.id
                   ? "border-blue-500/40 bg-blue-500/15 text-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
@@ -382,11 +385,24 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
               value={marketSearch}
               onChange={(e) => setMarketSearch(e.target.value)}
               placeholder="Search marketplace..."
-              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
+              aria-label="Search marketplace"
+              className="w-full rounded-xl border border-white/8 bg-white/[0.03] py-2.5 pl-10 pr-9 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-blue-500/40 focus:bg-white/[0.05] focus:ring-1 focus:ring-blue-500/20"
             />
+            {marketSearch && (
+              <button
+                type="button"
+                onClick={() => setMarketSearch("")}
+                aria-label="Clear marketplace search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
+            aria-label="Toggle filters"
+            aria-expanded={showFilters}
             className={`flex h-10 items-center gap-1.5 rounded-xl border px-3.5 text-[13px] font-semibold transition-all ${
               showFilters ? "border-blue-500/40 bg-blue-500/15 text-blue-300" : "border-white/8 bg-white/[0.03] text-zinc-400 hover:text-zinc-200"
             }`}
@@ -396,6 +412,7 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
+            aria-label="Sort marketplace apps"
             className="h-10 rounded-xl border border-white/8 bg-white/[0.03] px-3 text-[13px] font-semibold text-zinc-300 outline-none transition-all focus:border-blue-500/40 cursor-pointer"
           >
             <option value="popular">Most Popular</option>
