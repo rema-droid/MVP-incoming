@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -27,34 +27,48 @@ interface FeedCardProps {
   onRun: () => void;
 }
 
-/* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
-  const hooks = [
+/* ── Hoisted formatters to prevent array re-allocations on every card render ── */
+const HOOK_FORMATTERS = [
+  (repo: Repo) =>
     `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
+  (repo: Repo) =>
     `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
+  (repo: Repo) =>
     `${repo.title} is like finding a really useful tool in a drawer you forgot about — once you try it, you wonder how you lived without it.`,
+  (repo: Repo) =>
     `Here is why ${repo.owner || "people"} built ${repo.title} — and why thousands of fans keep coming back to it.`,
+  (repo: Repo) =>
     `In plain English: ${repo.title} is something that makes a hard job easy. Here is the full scoop.`,
-  ];
-  const randomHook = hooks[repo.id % hooks.length];
-  return { hook: randomHook, summary: summary.deep, short: summary.short };
+];
+
+const FACT_FORMATTERS = [
+  (repo: Repo) =>
+    `${repo.title} has more than ${repo.stars.toLocaleString()} fans — that is more popular than most apps people pay money for! And this one is completely free.`,
+  (repo: Repo) =>
+    `The people behind ${repo.title} come from all over the world. They have never met in person, but they work together online to build something useful for everyone.`,
+  (repo: Repo) =>
+    `${repo.title} is free software — which means every single instruction that makes it work is open for anyone to read. No secrets, no hidden tricks.`,
+  (repo: Repo) =>
+    `You can try ${repo.title} right now by tapping Run. We handle the setup — you just explore. No downloading, no installing, no headaches.`,
+  (repo: Repo) =>
+    `Some of the biggest companies in the world use tools exactly like ${repo.title} behind the scenes. Now you can try it yourself, for free, in your web browser.`,
+];
+
+const TRENDING_DELTAS = ["2.1K", "1.5K", "3.2K", "890", "1.8K", "4.1K"];
+
+/* ── AI-generated content helpers ── */
+// Uses pre-calculated summary to avoid duplicate calls to summarizeRepoForBeginners
+function getAIContent(repo: Repo, summary: ReturnType<typeof summarizeRepoForBeginners>) {
+  const hook = HOOK_FORMATTERS[repo.id % HOOK_FORMATTERS.length](repo);
+  return { hook, summary: summary.deep, short: summary.short };
 }
 
 function getDidYouKnow(repo: Repo) {
-  const facts = [
-    `${repo.title} has more than ${repo.stars.toLocaleString()} fans — that is more popular than most apps people pay money for! And this one is completely free.`,
-    `The people behind ${repo.title} come from all over the world. They have never met in person, but they work together online to build something useful for everyone.`,
-    `${repo.title} is free software — which means every single instruction that makes it work is open for anyone to read. No secrets, no hidden tricks.`,
-    `You can try ${repo.title} right now by tapping Run. We handle the setup — you just explore. No downloading, no installing, no headaches.`,
-    `Some of the biggest companies in the world use tools exactly like ${repo.title} behind the scenes. Now you can try it yourself, for free, in your web browser.`,
-  ];
-  return facts[repo.id % facts.length];
+  return FACT_FORMATTERS[repo.id % FACT_FORMATTERS.length](repo);
 }
 
 function getTrendingCopy(repo: Repo) {
-  const deltas = ["2.1K", "1.5K", "3.2K", "890", "1.8K", "4.1K"];
-  const delta = deltas[repo.id % deltas.length];
+  const delta = TRENDING_DELTAS[repo.id % TRENDING_DELTAS.length];
   return `${repo.title} picked up ${delta} new fans this week — people are loving this one`;
 }
 
@@ -71,6 +85,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             e.stopPropagation();
             setLiked(!liked);
           }}
+          aria-label={liked ? "Unlike repository" : "Like repository"}
           className="flex items-center gap-1.5 transition-all"
         >
           <Heart
@@ -84,6 +99,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
+          aria-label="Comments"
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
@@ -91,6 +107,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
+          aria-label="Share"
           className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
         >
           <Share2 className="h-4 w-4" />
@@ -110,7 +127,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
@@ -118,7 +135,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -313,6 +330,8 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
   return null;
 }
 
+export default React.memo(FeedCard);
+
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
   repo,
@@ -383,6 +402,7 @@ export function StoryOverlay({
         {/* Close */}
         <button
           onClick={onClose}
+          aria-label="Close story"
           className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -418,10 +438,16 @@ export function StoryOverlay({
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label="Like story"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+            >
               <Heart className="h-5 w-5" />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label="Share story"
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
