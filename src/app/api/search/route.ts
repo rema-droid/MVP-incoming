@@ -20,10 +20,17 @@ interface GitHubSearchResponse {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q");
+  const rawQ = searchParams.get("q");
+
+  if (!rawQ) {
+    return NextResponse.json({ error: "Missing query" }, { status: 400 });
+  }
+
+  // Security: Sanitize control characters and limit length to mitigate DoS and malformed API requests
+  const q = rawQ.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").slice(0, 256).trim();
 
   if (!q) {
-    return NextResponse.json({ error: "Missing query" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
   const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=100`;
