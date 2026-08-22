@@ -86,6 +86,14 @@ export default function RepoDetails({
   }, [repo.topics, repo.language]);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -126,7 +134,7 @@ export default function RepoDetails({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 hover:bg-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             aria-label="Back"
           >
             <ChevronLeft className="h-6 w-6" strokeWidth={2.25} />
@@ -178,7 +186,7 @@ export default function RepoDetails({
                 }
                 onRun(repo);
               }}
-              className="inline-flex min-h-[48px] min-w-[140px] items-center justify-center rounded-full bg-blue-500 px-10 text-[17px] font-bold tracking-wide text-white shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 active:scale-[0.98]"
+              className="inline-flex min-h-[48px] min-w-[140px] items-center justify-center rounded-full bg-blue-500 px-10 text-[17px] font-bold tracking-wide text-white shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {showShopActions ? "GET" : "RUN"}
             </button>
@@ -274,7 +282,7 @@ export default function RepoDetails({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="mt-4 text-[15px] font-semibold text-blue-400 hover:text-blue-300"
+              className="mt-4 rounded-md text-[15px] font-semibold text-blue-400 hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               {expanded ? "Show less ▲" : "Keep reading ▼"}
             </button>
@@ -357,7 +365,12 @@ export default function RepoDetails({
           </div>
           <button
             type="button"
-            className="mt-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-zinc-900/40 px-4 py-3 text-left text-zinc-300 hover:bg-zinc-900/70"
+            onClick={() => {
+              const targetUrl = repo.owner ? `https://github.com/${repo.owner}` : repo.url;
+              window.open(targetUrl, "_blank");
+            }}
+            aria-label={`See more from ${repo.owner || "this maker"}`}
+            className="mt-6 flex w-full items-center justify-between rounded-xl border border-white/10 bg-zinc-900/40 px-4 py-3 text-left text-zinc-300 hover:bg-zinc-900/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <span className="text-sm">See more from this maker</span>
             <ChevronRight className="h-5 w-5 text-zinc-500" />
