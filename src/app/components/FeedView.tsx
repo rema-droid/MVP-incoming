@@ -102,8 +102,8 @@ export default function FeedView({ repos, isLoading, onRepoView, onRun }: FeedVi
             repo={repo}
             variant={variant}
             index={idx}
-            onView={() => onRepoView(repo)}
-            onRun={() => onRun(repo)}
+            onView={onRepoView}
+            onRun={onRun}
           />
         ))}
       </div>
