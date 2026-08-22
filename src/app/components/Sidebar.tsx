@@ -1,9 +1,9 @@
 "use client";
 
-import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap } from "lucide-react";
+import { memo } from "react";
+import { Star, LayoutGrid, Flame, Eye, Bookmark, Settings, Search, User, Store, Rocket, Rss, Zap, LucideIcon } from "lucide-react";
 
 export type Tab = "discover" | "categories" | "shop" | "feed" | "runtime" | "trending" | "runnable" | "viewed" | "bookmarks" | "settings";
-
 
 interface SidebarProps {
   activeTab: Tab;
@@ -13,70 +13,33 @@ interface SidebarProps {
   onSearchSubmit?: (e: React.FormEvent) => void;
 }
 
-export default function Sidebar({
+interface NavItemDef {
+  label: string;
+  id: Tab;
+  IconComponent: LucideIcon;
+}
+
+// Hoisted navigation item definitions to prevent array & object allocations on every render pass
+const NAV_ITEMS: NavItemDef[] = [
+  { label: "Explore", id: "discover", IconComponent: Star },
+  { label: "Types", id: "categories", IconComponent: LayoutGrid },
+  { label: "Marketplace", id: "shop", IconComponent: Store },
+  { label: "Feed", id: "feed", IconComponent: Rss },
+  { label: "Try Apps", id: "runtime", IconComponent: Rocket },
+  { label: "Popular now", id: "trending", IconComponent: Flame },
+  { label: "Easy to Run", id: "runnable", IconComponent: Zap },
+  { label: "Recently Viewed", id: "viewed", IconComponent: Eye },
+  { label: "Saved", id: "bookmarks", IconComponent: Bookmark },
+  { label: "Options", id: "settings", IconComponent: Settings },
+];
+
+function Sidebar({
   activeTab,
   onTabChange,
   searchQuery = "",
   onSearchChange,
   onSearchSubmit,
 }: SidebarProps) {
-  const getIconClass = (id: string) => 
-    `h-4 w-4 shrink-0 transition-colors duration-200 ${
-      activeTab === id ? "text-blue-400" : "text-blue-400/60"
-    }`;
-
-  const navItems = [
-    {
-      label: "Explore",
-      id: "discover" as Tab,
-      icon: <Star className={getIconClass("discover")} />,
-    },
-    {
-      label: "Types",
-      id: "categories" as Tab,
-      icon: <LayoutGrid className={getIconClass("categories")} />,
-    },
-    {
-      label: "Marketplace",
-      id: "shop" as Tab,
-      icon: <Store className={getIconClass("shop")} />,
-    },
-    {
-      label: "Feed",
-      id: "feed" as Tab,
-      icon: <Rss className={getIconClass("feed")} />,
-    },
-    {
-      label: "Try Apps",
-      id: "runtime" as Tab,
-      icon: <Rocket className={getIconClass("runtime")} />,
-    },
-    {
-      label: "Popular now",
-      id: "trending" as Tab,
-      icon: <Flame className={getIconClass("trending")} />,
-    },
-    {
-      label: "Easy to Run",
-      id: "runnable" as Tab,
-      icon: <Zap className={getIconClass("runnable")} />,
-    },
-    {
-      label: "Recently Viewed",
-      id: "viewed" as Tab,
-      icon: <Eye className={getIconClass("viewed")} />,
-    },
-    {
-      label: "Saved",
-      id: "bookmarks" as Tab,
-      icon: <Bookmark className={getIconClass("bookmarks")} />,
-    },
-    {
-      label: "Options",
-      id: "settings" as Tab,
-      icon: <Settings className={getIconClass("settings")} />,
-    },
-  ];
 
   return (
     <aside className="hidden lg:flex w-[260px] flex-col border-r border-white/5 bg-[#031d24] h-[100dvh]">
@@ -109,9 +72,11 @@ export default function Sidebar({
 
       {/* ── Navigation List ── */}
       <nav className="flex flex-1 flex-col gap-1 px-3 py-2 overflow-y-auto">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           // Add visual separators
           const isDivider = item.id === "viewed" || item.id === "settings";
+          const isActive = activeTab === item.id;
+          const Icon = item.IconComponent;
           
           return (
             <div key={item.id} className="w-full">
@@ -119,12 +84,16 @@ export default function Sidebar({
               <button
                 onClick={() => onTabChange(item.id)}
                 className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  activeTab === item.id
+                  isActive
                     ? "bg-white/10 text-white"
                     : "text-zinc-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                {item.icon}
+                <Icon
+                  className={`h-4 w-4 shrink-0 transition-colors duration-200 ${
+                    isActive ? "text-blue-400" : "text-blue-400/60"
+                  }`}
+                />
                 {item.label}
               </button>
             </div>
@@ -146,3 +115,5 @@ export default function Sidebar({
     </aside>
   );
 }
+
+export default memo(Sidebar);
