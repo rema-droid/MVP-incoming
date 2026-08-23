@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { Play } from "lucide-react";
 import { getRepoBackdrop, type Repo } from "./RepoCard";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -10,23 +10,44 @@ interface NewsTickerProps {
   repos: Repo[];
 }
 
+interface PrecomputedCardItem {
+  repo: Repo;
+  summary: ReturnType<typeof summarizeRepoForBeginners>;
+  tag: string;
+  backdrop: string;
+  toneClass: string;
+  categoryLabel: string;
+}
+
 export default function NewsTicker({ repos }: NewsTickerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Precompute and memoize repository card metadata so expensive computations like
+  // summarizeRepoForBeginners, friendlyCategoryLabel, and SVG getRepoBackdrop generation
+  // are performed once per repo array change rather than duplicated across desktop and mobile render passes.
+  const cardData = useMemo<PrecomputedCardItem[]>(() => {
+    if (!repos) return [];
+    return repos.map((repo, idx) => ({
+      repo,
+      summary: summarizeRepoForBeginners(repo),
+      tag: idx === 0 ? "Top pick" : idx === 1 ? "Popular" : idx === 2 ? "New" : "Try now",
+      backdrop: getRepoBackdrop(repo),
+      toneClass:
+        idx % 3 === 0
+          ? "from-cyan-400/25"
+          : idx % 3 === 1
+            ? "from-violet-400/25"
+            : "from-emerald-400/25",
+      categoryLabel: friendlyCategoryLabel(repo),
+    }));
+  }, [repos]);
+
   if (!repos || repos.length === 0) return null;
 
-  const desktopRepos = repos.slice(0, 3);
+  const desktopCardData = cardData.slice(0, 3);
 
-  const renderCard = (repo: Repo, idx: number, mode: "mobile" | "desktop") => {
-    const summary = summarizeRepoForBeginners(repo);
-    const tag = idx === 0 ? "Top pick" : idx === 1 ? "Popular" : idx === 2 ? "New" : "Try now";
-    const backdrop = getRepoBackdrop(repo);
-    const toneClass =
-      idx % 3 === 0
-        ? "from-cyan-400/25"
-        : idx % 3 === 1
-          ? "from-violet-400/25"
-          : "from-emerald-400/25";
+  const renderCard = (item: PrecomputedCardItem, mode: "mobile" | "desktop") => {
+    const { repo, summary, tag, backdrop, toneClass, categoryLabel } = item;
 
     return (
       <article
@@ -79,7 +100,7 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300/80">
-                {friendlyCategoryLabel(repo)}
+                {categoryLabel}
               </p>
               <h3 className="truncate text-[22px] font-semibold tracking-tight text-white">
                 {repo.title}
@@ -116,10 +137,10 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
           className="flex w-full gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbars md:hidden"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {repos.map((repo, idx) => renderCard(repo, idx, "mobile"))}
+          {cardData.map((item) => renderCard(item, "mobile"))}
         </div>
         <div className="hidden grid-cols-3 gap-5 md:grid">
-          {desktopRepos.map((repo, idx) => renderCard(repo, idx, "desktop"))}
+          {desktopCardData.map((item) => renderCard(item, "desktop"))}
         </div>
       </div>
     </div>
