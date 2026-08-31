@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { type Repo, getRepoBackdrop } from "./RepoCard";
-import { summarizeRepoForBeginners } from "@/lib/repoSummary";
+import { summarizeRepoForBeginners, type RepoSummary } from "@/lib/repoSummary";
 
 export type FeedCardVariant = "ai-summary" | "video" | "spotlight" | "trending" | "didyouknow";
 
@@ -23,13 +23,13 @@ interface FeedCardProps {
   repo: Repo;
   variant: FeedCardVariant;
   index: number;
-  onView: () => void;
-  onRun: () => void;
+  onView: (repo: Repo) => void;
+  onRun: (repo: Repo) => void;
 }
 
 /* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
+// Performance optimization: Accepts pre-calculated `summary` to avoid duplicate calls to summarizeRepoForBeginners
+function getAIContent(repo: Repo, summary: RepoSummary) {
   const hooks = [
     `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
     `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
@@ -59,7 +59,7 @@ function getTrendingCopy(repo: Repo) {
 }
 
 /* ── Engagement Bar ── */
-function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
+function EngagementBar({ repo, onRun }: { repo: Repo; onRun: (repo: Repo) => void }) {
   const [liked, setLiked] = useState(false);
   const likeCount = Math.floor(repo.stars / 100) + (liked ? 1 : 0);
 
@@ -99,7 +99,7 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onRun();
+          onRun(repo);
         }}
         className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
       >
@@ -110,15 +110,18 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+// Performance optimization: Wrapped in React.memo with stable handler props to skip wasteful re-renders when parent feed state updates
+function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
   const cardStyle = { animationDelay: `${index * 80}ms` };
 
+  const handleCardClick = () => onView(repo);
+
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -128,7 +131,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const gradient = gradients[index % gradients.length];
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleCardClick} className={cardClasses} style={cardStyle}>
         <div className={`bg-gradient-to-br ${gradient} bg-white/[0.02] p-5`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-black/30">
@@ -161,7 +164,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const backdrop = getRepoBackdrop(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleCardClick} className={cardClasses} style={cardStyle}>
         <div className="bg-white/[0.02]">
           <div className="flex items-center gap-3 p-4 pb-3">
             <div className="h-9 w-9 overflow-hidden rounded-full border border-white/10 bg-black/30">
@@ -205,7 +208,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const backdrop = getRepoBackdrop(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleCardClick} className={cardClasses} style={cardStyle}>
         <div className="relative overflow-hidden">
           <div className="relative aspect-[2.5/1] w-full overflow-hidden">
             <Image src={backdrop} alt="" fill sizes="100%" className="object-cover" />
@@ -249,7 +252,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const copy = getTrendingCopy(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleCardClick} className={cardClasses} style={cardStyle}>
         <div className="bg-gradient-to-r from-orange-500/8 to-transparent bg-white/[0.02] p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 border border-orange-500/20">
@@ -284,7 +287,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const fact = getDidYouKnow(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleCardClick} className={cardClasses} style={cardStyle}>
         <div className="bg-gradient-to-br from-violet-500/8 to-transparent bg-white/[0.02] p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
@@ -312,6 +315,8 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   return null;
 }
+
+export default React.memo(FeedCard);
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
