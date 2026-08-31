@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Heart,
   MessageCircle,
@@ -71,7 +71,8 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             e.stopPropagation();
             setLiked(!liked);
           }}
-          className="flex items-center gap-1.5 transition-all"
+          aria-label={liked ? `Unlike ${repo.title}` : `Like ${repo.title}`}
+          className="flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none rounded-md"
         >
           <Heart
             className={`h-4 w-4 transition-all duration-300 ${
@@ -84,14 +85,16 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label={`Comments for ${repo.title}`}
+          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none rounded-md"
         >
           <MessageCircle className="h-4 w-4" />
           <span className="text-[12px] font-medium text-zinc-500">{Math.floor(repo.stars / 500)}</span>
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          aria-label={`Share ${repo.title}`}
+          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none rounded-md"
         >
           <Share2 className="h-4 w-4" />
         </button>
@@ -101,7 +104,8 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
           e.stopPropagation();
           onRun();
         }}
-        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
+        aria-label={`Try ${repo.title} now`}
+        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
       >
         <Play className="h-3 w-3 fill-blue-400" /> Try it now
       </button>
@@ -374,8 +378,21 @@ export function StoryOverlay({
   const backdrop = getRepoBackdrop(repo);
   const summary = summarizeRepoForBeginners(repo);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Story: ${repo.title}`}
+    >
       <div className="relative w-full max-w-lg mx-4 aspect-[9/16] max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 bg-[#0a0e14]">
         <Image src={backdrop} alt="" fill className="object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
@@ -383,7 +400,8 @@ export function StoryOverlay({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+          aria-label="Close story"
+          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
         >
           <X className="h-5 w-5" />
         </button>
@@ -414,14 +432,20 @@ export function StoryOverlay({
           <div className="flex items-center gap-3">
             <button
               onClick={onRun}
-              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95"
+              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label={`Like ${repo.title}`}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 hover:bg-white/20 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+            >
               <Heart className="h-5 w-5" />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              aria-label={`Share ${repo.title}`}
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 hover:bg-white/20 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
