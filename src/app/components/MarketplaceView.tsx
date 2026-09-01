@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Search,
   Play,
@@ -33,6 +33,14 @@ function getPrice(repo: Repo) {
   if (repo.stars > 50000) return "$19.99";
   if (repo.stars > 10000) return "$9.99";
   return "Free";
+}
+
+// Optimization: Numeric helper for price sorting to eliminate repeated string formatting & parsing
+function getPriceValue(stars: number): number {
+  if (stars > 100000) return 29.99;
+  if (stars > 50000) return 19.99;
+  if (stars > 10000) return 9.99;
+  return 0;
 }
 
 function getRating(repo: Repo) {
@@ -87,16 +95,26 @@ const collections = [
 
 type SortOption = "popular" | "newest" | "price-low" | "price-high" | "stars";
 
+// Optimization: Hoist category keyword definitions outside component/function scope to eliminate array allocations per repo check
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  ai: ["ai", "llm", "gpt", "neural", "transformer", "langchain", "agent"],
+  web: ["react", "next", "vue", "angular", "frontend", "ui", "css", "web", "html"],
+  mobile: ["mobile", "ios", "android", "flutter", "react-native", "swift"],
+  devtools: ["cli", "sdk", "plugin", "developer", "devtool", "build", "testing", "debug"],
+  data: ["data", "analytics", "pandas", "spark", "ml", "dataset", "chart"],
+  creative: ["image", "video", "audio", "design", "creative", "editor", "media"],
+  security: ["security", "auth", "oauth", "encryption", "privacy", "jwt"],
+  cloud: ["docker", "kubernetes", "terraform", "cloud", "devops", "aws", "deploy"],
+};
+
 function categorizeRepo(repo: Repo): string {
   const source = `${repo.title} ${repo.plainEnglishDescription} ${repo.language || ""} ${(repo.topics || []).join(" ")}`.toLowerCase();
-  if (["ai", "llm", "gpt", "neural", "transformer", "langchain", "agent"].some((k) => source.includes(k))) return "ai";
-  if (["react", "next", "vue", "angular", "frontend", "ui", "css", "web", "html"].some((k) => source.includes(k))) return "web";
-  if (["mobile", "ios", "android", "flutter", "react-native", "swift"].some((k) => source.includes(k))) return "mobile";
-  if (["cli", "sdk", "plugin", "developer", "devtool", "build", "testing", "debug"].some((k) => source.includes(k))) return "devtools";
-  if (["data", "analytics", "pandas", "spark", "ml", "dataset", "chart"].some((k) => source.includes(k))) return "data";
-  if (["image", "video", "audio", "design", "creative", "editor", "media"].some((k) => source.includes(k))) return "creative";
-  if (["security", "auth", "oauth", "encryption", "privacy", "jwt"].some((k) => source.includes(k))) return "security";
-  if (["docker", "kubernetes", "terraform", "cloud", "devops", "aws", "deploy"].some((k) => source.includes(k))) return "cloud";
+  for (const cat in CATEGORY_KEYWORDS) {
+    const keywords = CATEGORY_KEYWORDS[cat];
+    for (let i = 0; i < keywords.length; i++) {
+      if (source.includes(keywords[i])) return cat;
+    }
+  }
   return "all";
 }
 
@@ -115,7 +133,8 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 /* ── Marketplace Card ── */
-function MarketplaceCard({
+// Optimization: Wrap MarketplaceCard in React.memo to prevent unnecessary re-renders when parent state updates
+const MarketplaceCard = React.memo(function MarketplaceCard({
   repo,
   badge,
   onView,
@@ -214,7 +233,7 @@ function MarketplaceCard({
       </div>
     </article>
   );
-}
+});
 
 /* ── Main MarketplaceView ── */
 export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }: MarketplaceViewProps) {
@@ -259,18 +278,10 @@ export default function MarketplaceView({ repos, isLoading, onRepoView, onRun }:
         result.sort((a, b) => b.id - a.id);
         break;
       case "price-low":
-        result.sort((a, b) => {
-          const pa = getPrice(a) === "Free" ? 0 : parseFloat(getPrice(a).replace("$", ""));
-          const pb = getPrice(b) === "Free" ? 0 : parseFloat(getPrice(b).replace("$", ""));
-          return pa - pb;
-        });
+        result.sort((a, b) => getPriceValue(a.stars) - getPriceValue(b.stars));
         break;
       case "price-high":
-        result.sort((a, b) => {
-          const pa = getPrice(a) === "Free" ? 0 : parseFloat(getPrice(a).replace("$", ""));
-          const pb = getPrice(b) === "Free" ? 0 : parseFloat(getPrice(b).replace("$", ""));
-          return pb - pa;
-        });
+        result.sort((a, b) => getPriceValue(b.stars) - getPriceValue(a.stars));
         break;
       case "stars":
         result.sort((a, b) => b.stars - a.stars);
