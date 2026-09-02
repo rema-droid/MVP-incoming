@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { Play } from "lucide-react";
 import { getRepoBackdrop, type Repo } from "./RepoCard";
 import { friendlyCategoryLabel, summarizeRepoForBeginners } from "@/lib/repoSummary";
@@ -13,20 +13,34 @@ interface NewsTickerProps {
 export default function NewsTicker({ repos }: NewsTickerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Performance optimization: Pre-compute card metadata per repo to prevent
+  // redundant calculations across desktop and mobile layout passes.
+  const cardDataList = useMemo(() => {
+    if (!repos || repos.length === 0) return [];
+    return repos.map((repo, idx) => ({
+      repo,
+      summary: summarizeRepoForBeginners(repo),
+      category: friendlyCategoryLabel(repo),
+      tag: idx === 0 ? "Top pick" : idx === 1 ? "Popular" : idx === 2 ? "New" : "Try now",
+      backdrop: getRepoBackdrop(repo),
+      toneClass:
+        idx % 3 === 0
+          ? "from-cyan-400/25"
+          : idx % 3 === 1
+            ? "from-violet-400/25"
+            : "from-emerald-400/25",
+    }));
+  }, [repos]);
+
   if (!repos || repos.length === 0) return null;
 
-  const desktopRepos = repos.slice(0, 3);
+  const desktopCardData = cardDataList.slice(0, 3);
 
-  const renderCard = (repo: Repo, idx: number, mode: "mobile" | "desktop") => {
-    const summary = summarizeRepoForBeginners(repo);
-    const tag = idx === 0 ? "Top pick" : idx === 1 ? "Popular" : idx === 2 ? "New" : "Try now";
-    const backdrop = getRepoBackdrop(repo);
-    const toneClass =
-      idx % 3 === 0
-        ? "from-cyan-400/25"
-        : idx % 3 === 1
-          ? "from-violet-400/25"
-          : "from-emerald-400/25";
+  const renderCard = (
+    cardData: (typeof cardDataList)[number],
+    mode: "mobile" | "desktop"
+  ) => {
+    const { repo, summary, category, tag, backdrop, toneClass } = cardData;
 
     return (
       <article
@@ -45,7 +59,6 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
               sizes={mode === "mobile" ? "92vw" : "33vw"}
               className="object-cover"
             />
-            {/* Removed: cover image / opengraph quick-look overlay */}
             <div className={`absolute inset-0 bg-gradient-to-t ${toneClass} via-transparent to-transparent`} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute left-4 top-4 rounded-full bg-black/45 px-3 py-1 text-[10px] font-semibold tracking-[0.14em] text-zinc-100 backdrop-blur">
@@ -79,7 +92,7 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-300/80">
-                {friendlyCategoryLabel(repo)}
+                {category}
               </p>
               <h3 className="truncate text-[22px] font-semibold tracking-tight text-white">
                 {repo.title}
@@ -116,10 +129,10 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
           className="flex w-full gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbars md:hidden"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {repos.map((repo, idx) => renderCard(repo, idx, "mobile"))}
+          {cardDataList.map((cardData) => renderCard(cardData, "mobile"))}
         </div>
         <div className="hidden grid-cols-3 gap-5 md:grid">
-          {desktopRepos.map((repo, idx) => renderCard(repo, idx, "desktop"))}
+          {desktopCardData.map((cardData) => renderCard(cardData, "desktop"))}
         </div>
       </div>
     </div>
