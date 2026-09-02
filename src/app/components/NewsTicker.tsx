@@ -35,7 +35,8 @@ export default function NewsTicker({ repos }: NewsTickerProps) {
       >
         <button
           onClick={() => window.open(repo.url, "_blank")}
-          className="block w-full text-left"
+          aria-label={`View ${repo.title} repository by ${repo.owner || "author"}`}
+          className="block w-full text-left rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#0c1f28]">
             <Image
