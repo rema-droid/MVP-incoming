@@ -9,8 +9,27 @@ async function proxy(request: Request, context: { params: Promise<{ jobId: strin
     return NextResponse.json({ error: "Runtime not ready" }, { status: 409 });
   }
 
+  const rawSegments = path || [];
+  const isValidPath = rawSegments.every((segment) => {
+    if (!segment || segment === "." || segment === "..") return false;
+    if (segment.includes("\\") || segment.includes("\0")) return false;
+    try {
+      const decoded = decodeURIComponent(segment);
+      if (decoded === "." || decoded === ".." || decoded.includes("/") || decoded.includes("\\") || decoded.includes("\0")) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+    return true;
+  });
+
+  if (!isValidPath) {
+    return NextResponse.json({ error: "Invalid path parameter" }, { status: 400 });
+  }
+
   const incoming = new URL(request.url);
-  const upstreamPath = `/${(path || []).join("/")}`;
+  const upstreamPath = `/${rawSegments.join("/")}`;
   const upstream = new URL(upstreamPath, target.targetOrigin);
   upstream.search = incoming.search;
 
