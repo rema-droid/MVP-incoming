@@ -205,7 +205,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
                     }
                     window.open(repo.url, "_blank");
                   }}
-                  className="flex h-11 min-w-[92px] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/12 px-4 text-sm font-semibold tracking-wide text-white backdrop-blur-md transition-all hover:bg-white/20"
+                  className="flex h-11 min-w-[92px] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/12 px-4 text-sm font-semibold tracking-wide text-white backdrop-blur-md transition-all hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                   aria-label={`Run ${repo.title}`}
                 >
                   <Play className="h-3.5 w-3.5 fill-white" />
@@ -217,7 +217,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
                       e.stopPropagation();
                       window.open(repo.url, "_blank");
                     }}
-                    className="hidden h-11 min-w-[84px] items-center justify-center rounded-full border px-4 text-sm font-semibold tracking-wide backdrop-blur-md md:flex"
+                    className="hidden h-11 min-w-[84px] items-center justify-center rounded-full border px-4 text-sm font-semibold tracking-wide backdrop-blur-md md:flex focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                     style={{
                       borderColor: `${palette.accent}44`,
                       backgroundColor: `${palette.primary}22`,
@@ -286,7 +286,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
             }
             window.open(repo.url, "_blank");
           }}
-          className="flex h-[34px] min-w-[80px] items-center justify-center gap-1.5 rounded-[8px] border border-blue-500/30 bg-blue-500/10 px-4 text-[13px] font-bold tracking-wide text-blue-400 transition-all hover:bg-blue-500/20 hover:border-blue-500/50 shadow-inner group-hover:bg-blue-500/30"
+          className="flex h-[34px] min-w-[80px] items-center justify-center gap-1.5 rounded-[8px] border border-blue-500/30 bg-blue-500/10 px-4 text-[13px] font-bold tracking-wide text-blue-400 transition-all hover:bg-blue-500/20 hover:border-blue-500/50 shadow-inner group-hover:bg-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
           aria-label={`Run ${repo.title}`}
         >
           <Play className="h-3 w-3 fill-blue-400" /> Run
@@ -297,7 +297,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
               e.stopPropagation();
               window.open(repo.url, "_blank");
             }}
-            className="flex h-[34px] min-w-[76px] items-center justify-center rounded-[8px] border border-emerald-500/30 bg-emerald-500/10 px-4 text-[13px] font-bold tracking-wide text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-inner"
+            className="flex h-[34px] min-w-[76px] items-center justify-center rounded-[8px] border border-emerald-500/30 bg-emerald-500/10 px-4 text-[13px] font-bold tracking-wide text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-inner focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
             aria-label={`Get ${repo.title}`}
           >
             {priceLabel}
