@@ -43,6 +43,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid repo payload' }, { status: 400 });
     }
 
+    // Security check: Validate repository URL to prevent SSRF and arbitrary command / network target injection
+    try {
+      const parsedUrl = new URL(repo.url);
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        return NextResponse.json({ error: "Invalid repository URL protocol" }, { status: 400 });
+      }
+      const host = parsedUrl.hostname.toLowerCase();
+      if (
+        host !== "github.com" && !host.endsWith(".github.com") &&
+        host !== "githubusercontent.com" && !host.endsWith(".githubusercontent.com") &&
+        host !== "github.io" && !host.endsWith(".github.io")
+      ) {
+        return NextResponse.json({ error: "Only GitHub repository URLs are allowed" }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Malformed repository URL" }, { status: 400 });
+    }
+
     // TODO: In a real implementation, we would clone the repo here and get the file list.
     // For now, we'll simulate it to test the runtime detection.
     const repoFiles = ['package.json', 'next.config.js', 'README.md'];
