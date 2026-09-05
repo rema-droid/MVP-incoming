@@ -21,7 +21,10 @@ const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
 
 export default function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
-    <nav className="fixed bottom-0 z-50 w-full border-t border-white/10 bg-[#031d24]/90 pb-safe pt-2 backdrop-blur-xl lg:hidden">
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed bottom-0 z-50 w-full border-t border-white/10 bg-[#031d24]/90 pb-safe pt-2 backdrop-blur-xl lg:hidden"
+    >
       <div className="flex h-14 w-full items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
@@ -29,7 +32,9 @@ export default function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className="group flex flex-1 flex-col items-center justify-center gap-1"
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="group flex flex-1 flex-col items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg"
             >
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
