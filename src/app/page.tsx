@@ -122,7 +122,9 @@ function buildDiscoverSections(repos: Repo[]): DiscoverSection[] {
     .filter((section) => section.repos.length > 0)
     .sort((a, b) => b.repos.length - a.repos.length);
 
-  const fallbackRepos = repos.filter((repo) => !sections.some((section) => section.repos.some((r) => r.id === repo.id)));
+  // Performance optimization: derive Set of assigned repo IDs for O(1) fallback filtering instead of O(N * S * K) nested array lookups
+  const assignedRepoIds = new Set(sections.flatMap((s) => s.repos.map((r) => r.id)));
+  const fallbackRepos = repos.filter((repo) => !assignedRepoIds.has(repo.id));
   if (fallbackRepos.length > 0) {
     sections.push({
       id: "discover",
@@ -326,7 +328,11 @@ export default function Home() {
   const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
   const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
   const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
+  // Performance optimization: Memoize categorizedGroups so groupReposByCategory only runs when activeTab === "categories"
+  const categorizedGroups = useMemo(() => {
+    if (activeTab !== "categories") return {};
+    return groupReposByCategory(displayRepos);
+  }, [displayRepos, activeTab]);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
   const canShowSeeAll = listRepos.length > 32;
 
