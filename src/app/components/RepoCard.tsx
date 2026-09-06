@@ -105,14 +105,19 @@ export function getRepoBackdrop(repo: Repo) {
 }
 
 export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
-  const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
-  const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
-  const backdrop = getRepoBackdrop(repo);
-  const palette = getRepoPalette(repo);
-  const eyebrow = friendlyCategoryLabel(repo);
+  // Always summarize repo since it's needed for both "list" and "widget" variants
   const summary = summarizeRepoForBeginners(repo);
 
+  // Performance optimization: Postpone expensive widget-only metadata calculations
+  // (SVG backdrop, palette, category eyebrow, and price calculations)
+  // so list-variant repo cards skip SVG string building and URL encoding completely.
   if (variant === "widget") {
+    const computedPrice = repo.stars > 100000 ? "$29.99" : repo.stars > 50000 ? "$19.99" : repo.stars > 10000 ? "$9.99" : "$0";
+    const priceLabel = computedPrice === "$0" ? "Free" : `Get ${computedPrice}`;
+    const backdrop = getRepoBackdrop(repo);
+    const palette = getRepoPalette(repo);
+    const eyebrow = friendlyCategoryLabel(repo);
+
     return (
       <article className="group relative flex min-h-[248px] w-full overflow-hidden rounded-[30px] border border-white/10 bg-[#062a34] p-0 shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
         <div className="relative min-h-[248px] w-full">
@@ -300,7 +305,7 @@ export default function RepoCard({ repo, showPrice = false, onRun, variant = "li
             className="flex h-[34px] min-w-[76px] items-center justify-center rounded-[8px] border border-emerald-500/30 bg-emerald-500/10 px-4 text-[13px] font-bold tracking-wide text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-inner"
             aria-label={`Get ${repo.title}`}
           >
-            {priceLabel}
+            {repo.stars > 100000 ? "Get $29.99" : repo.stars > 50000 ? "Get $19.99" : repo.stars > 10000 ? "Get $9.99" : "Free"}
           </button>
         ) : null}
       </div>
