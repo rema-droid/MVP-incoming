@@ -14,8 +14,9 @@ import {
   Flame,
   X,
 } from "lucide-react";
+import { memo } from "react";
 import { type Repo, getRepoBackdrop } from "./RepoCard";
-import { summarizeRepoForBeginners } from "@/lib/repoSummary";
+import { summarizeRepoForBeginners, type RepoSummary } from "@/lib/repoSummary";
 
 export type FeedCardVariant = "ai-summary" | "video" | "spotlight" | "trending" | "didyouknow";
 
@@ -23,13 +24,13 @@ interface FeedCardProps {
   repo: Repo;
   variant: FeedCardVariant;
   index: number;
-  onView: () => void;
-  onRun: () => void;
+  onView: (repo: Repo) => void;
+  onRun: (repo: Repo) => void;
 }
 
 /* ── AI-generated content ── */
-function getAIContent(repo: Repo) {
-  const summary = summarizeRepoForBeginners(repo);
+// Reuse pre-calculated summary to avoid duplicate calls to summarizeRepoForBeginners
+function getAIContent(repo: Repo, summary: RepoSummary) {
   const hooks = [
     `Imagine you had a helper that could handle ${repo.title.toLowerCase().replace(/-/g, " ")} for you. That is basically what this is.`,
     `Most people scroll past ${repo.title} without knowing what it does. Let us break it down for you in normal words.`,
@@ -110,15 +111,19 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
 }
 
 /* ── Feed Card Component ── */
-export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCardProps) {
+function FeedCardComponent({ repo, variant, index, onView, onRun }: FeedCardProps) {
+  // Pre-calculate summary once for the card
   const summary = summarizeRepoForBeginners(repo);
 
   const cardClasses = "cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all duration-300 hover:border-white/15 hover:shadow-[0_8px_40px_rgba(0,0,0,0.3)] feed-card-enter";
   const cardStyle = { animationDelay: `${index * 80}ms` };
 
+  const handleView = () => onView(repo);
+  const handleRun = () => onRun(repo);
+
   /* ── AI Summary Card ── */
   if (variant === "ai-summary") {
-    const ai = getAIContent(repo);
+    const ai = getAIContent(repo, summary);
     const gradients = [
       "from-blue-600/15 via-cyan-500/8 to-transparent",
       "from-purple-600/15 via-pink-500/8 to-transparent",
@@ -128,7 +133,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const gradient = gradients[index % gradients.length];
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleView} className={cardClasses} style={cardStyle}>
         <div className={`bg-gradient-to-br ${gradient} bg-white/[0.02] p-5`}>
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-black/30">
@@ -150,7 +155,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
           <p className="text-[14px] text-zinc-200 leading-relaxed mb-2">{ai.hook}</p>
           <p className="text-[13px] text-zinc-400 leading-relaxed line-clamp-4">{ai.short}</p>
 
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={handleRun} />
         </div>
       </article>
     );
@@ -161,7 +166,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const backdrop = getRepoBackdrop(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleView} className={cardClasses} style={cardStyle}>
         <div className="bg-white/[0.02]">
           <div className="flex items-center gap-3 p-4 pb-3">
             <div className="h-9 w-9 overflow-hidden rounded-full border border-white/10 bg-black/30">
@@ -193,7 +198,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
             {summary.goodForPills[0] && (
               <p className="text-[11px] text-zinc-500 mt-2">✦ {summary.goodForPills[0]}</p>
             )}
-            <EngagementBar repo={repo} onRun={onRun} />
+            <EngagementBar repo={repo} onRun={handleRun} />
           </div>
         </div>
       </article>
@@ -205,7 +210,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const backdrop = getRepoBackdrop(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleView} className={cardClasses} style={cardStyle}>
         <div className="relative overflow-hidden">
           <div className="relative aspect-[2.5/1] w-full overflow-hidden">
             <Image src={backdrop} alt="" fill sizes="100%" className="object-cover" />
@@ -237,7 +242,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
                 ))}
               </div>
             )}
-            <EngagementBar repo={repo} onRun={onRun} />
+            <EngagementBar repo={repo} onRun={handleRun} />
           </div>
         </div>
       </article>
@@ -249,7 +254,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const copy = getTrendingCopy(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleView} className={cardClasses} style={cardStyle}>
         <div className="bg-gradient-to-r from-orange-500/8 to-transparent bg-white/[0.02] p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 border border-orange-500/20">
@@ -273,7 +278,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
               </div>
             </div>
           </div>
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={handleRun} />
         </div>
       </article>
     );
@@ -284,7 +289,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
     const fact = getDidYouKnow(repo);
 
     return (
-      <article onClick={onView} className={cardClasses} style={cardStyle}>
+      <article onClick={handleView} className={cardClasses} style={cardStyle}>
         <div className="bg-gradient-to-br from-violet-500/8 to-transparent bg-white/[0.02] p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
@@ -304,7 +309,7 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
               <p className="text-[11px] text-zinc-500">{repo.owner}</p>
             </div>
           </div>
-          <EngagementBar repo={repo} onRun={onRun} />
+          <EngagementBar repo={repo} onRun={handleRun} />
         </div>
       </article>
     );
@@ -312,6 +317,10 @@ export default function FeedCard({ repo, variant, index, onView, onRun }: FeedCa
 
   return null;
 }
+
+// Wrap FeedCard in React.memo to prevent redundant re-renders when parent state changes
+const FeedCard = memo(FeedCardComponent);
+export default FeedCard;
 
 /* ── Story Circle (for the stories bar) ── */
 export function StoryCircle({
