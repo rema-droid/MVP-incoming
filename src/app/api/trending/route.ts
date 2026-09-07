@@ -96,9 +96,19 @@ function mapRepo(repo: GitHubRepo) {
   };
 }
 
+const ALLOWED_CATEGORIES = new Set([
+  "discover",
+  "shop",
+  "categories",
+  "trending",
+  "runnable",
+]);
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const category = searchParams.get("category") || "discover";
+  const rawCategory = searchParams.get("category") || "discover";
+  // Validate category parameter against strict allowlist to avoid prototype pollution or unexpected state
+  const category = ALLOWED_CATEGORIES.has(rawCategory) ? rawCategory : "discover";
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
