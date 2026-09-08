@@ -54,19 +54,34 @@ function getRepoPalette(repo: Repo) {
   return paletteMap.default;
 }
 
+const SVG_ESCAPE_RE = /[&"<>]/g;
+const SVG_ESCAPE_MAP: Record<string, string> = {
+  "&": "&amp;",
+  '"': "&quot;",
+  "<": "&lt;",
+  ">": "&gt;",
+};
+
 function escapeSvg(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return value.replace(SVG_ESCAPE_RE, (ch) => SVG_ESCAPE_MAP[ch]);
 }
+
+// Map cache for getRepoBackdrop to avoid re-generating SVG strings for unchanged repository metadata
+const backdropCache = new Map<string, string>();
+const MAX_BACKDROP_CACHE_SIZE = 500;
 
 /* Backdrop SVG for widget cards — no external images, just a beautiful gradient */
 export function getRepoBackdrop(repo: Repo) {
   const palette = getRepoPalette(repo);
   const label = friendlyCategoryLabel(repo);
   const topic = repo.topics?.find(Boolean)?.replace(/-/g, " ") || repo.owner || "Try it free";
+
+  const cacheKey = `${palette.primary}:${palette.secondary}:${palette.accent}:${palette.glow}:${label}:${topic}`;
+  const cached = backdropCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
       <defs>
@@ -101,7 +116,15 @@ export function getRepoBackdrop(repo: Repo) {
       <text x="88" y="770" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" fill="rgba(255,255,255,0.80)">${escapeSvg(topic)}</text>
     </svg>
   `;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+
+  if (backdropCache.size >= MAX_BACKDROP_CACHE_SIZE) {
+    const firstKey = backdropCache.keys().next().value;
+    if (firstKey !== undefined) backdropCache.delete(firstKey);
+  }
+  backdropCache.set(cacheKey, result);
+
+  return result;
 }
 
 export default function RepoCard({ repo, showPrice = false, onRun, variant = "list" }: RepoCardProps) {
