@@ -122,7 +122,9 @@ function buildDiscoverSections(repos: Repo[]): DiscoverSection[] {
     .filter((section) => section.repos.length > 0)
     .sort((a, b) => b.repos.length - a.repos.length);
 
-  const fallbackRepos = repos.filter((repo) => !sections.some((section) => section.repos.some((r) => r.id === repo.id)));
+  // Derive assigned repo IDs once in O(N) to avoid O(N * S * K) nested array lookups per repository
+  const assignedRepoIds = new Set(sections.flatMap((section) => section.repos.map((r) => r.id)));
+  const fallbackRepos = repos.filter((repo) => !assignedRepoIds.has(repo.id));
   if (fallbackRepos.length > 0) {
     sections.push({
       id: "discover",
@@ -323,10 +325,23 @@ export default function Home() {
     : activeTab === "bookmarks" ? "Saved"
     : "Recently Viewed";
 
-  const heroRepos = !isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : [];
-  const listRepos = activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos;
-  const visibleRepos = showAllRepos ? listRepos : listRepos.slice(0, 32);
-  const categorizedGroups = groupReposByCategory(displayRepos);
+  // Preserve array reference stability across parent re-renders to prevent cascading child re-renders
+  const heroRepos = useMemo(
+    () => (!isInSearchMode && activeTab === "discover" ? feedRepos.slice(0, 8) : []),
+    [isInSearchMode, activeTab, feedRepos]
+  );
+  const listRepos = useMemo(
+    () => (activeTab === "discover" && !isInSearchMode ? feedRepos.slice(8) : displayRepos),
+    [activeTab, isInSearchMode, feedRepos, displayRepos]
+  );
+  const visibleRepos = useMemo(
+    () => (showAllRepos ? listRepos : listRepos.slice(0, 32)),
+    [showAllRepos, listRepos]
+  );
+  const categorizedGroups = useMemo(() => {
+    if (activeTab !== "categories") return {};
+    return groupReposByCategory(displayRepos);
+  }, [activeTab, displayRepos]);
   const discoverSections = useMemo(() => buildDiscoverSections(feedRepos), [feedRepos]);
   const canShowSeeAll = listRepos.length > 32;
 
