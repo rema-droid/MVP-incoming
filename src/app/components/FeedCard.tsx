@@ -71,7 +71,8 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
             e.stopPropagation();
             setLiked(!liked);
           }}
-          className="flex items-center gap-1.5 transition-all"
+          className="flex items-center gap-1.5 transition-all rounded-md focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          aria-label={liked ? `Unlike ${repo.title}, ${likeCount.toLocaleString()} likes` : `Like ${repo.title}, ${likeCount.toLocaleString()} likes`}
         >
           <Heart
             className={`h-4 w-4 transition-all duration-300 ${
@@ -84,14 +85,16 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors rounded-md focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          aria-label={`View comments on ${repo.title}, ${Math.floor(repo.stars / 500)} comments`}
         >
           <MessageCircle className="h-4 w-4" />
           <span className="text-[12px] font-medium text-zinc-500">{Math.floor(repo.stars / 500)}</span>
         </button>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors rounded-md focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          aria-label={`Share ${repo.title}`}
         >
           <Share2 className="h-4 w-4" />
         </button>
@@ -101,7 +104,8 @@ function EngagementBar({ repo, onRun }: { repo: Repo; onRun: () => void }) {
           e.stopPropagation();
           onRun();
         }}
-        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20"
+        className="flex h-[28px] items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 text-[11px] font-bold text-blue-400 transition-all hover:bg-blue-500/20 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+        aria-label={`Try ${repo.title} now`}
       >
         <Play className="h-3 w-3 fill-blue-400" /> Try it now
       </button>
@@ -326,7 +330,8 @@ export function StoryCircle({
   return (
     <button
       onClick={onClick}
-      className="flex shrink-0 flex-col items-center gap-1.5 group"
+      className="flex shrink-0 flex-col items-center gap-1.5 group rounded-full focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+      aria-label={`View story for ${repo.title}`}
     >
       <div
         className={`relative h-16 w-16 rounded-full p-[2px] transition-all duration-300 ${
@@ -383,7 +388,8 @@ export function StoryOverlay({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors"
+          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur hover:bg-black/70 transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+          aria-label="Close story"
         >
           <X className="h-5 w-5" />
         </button>
@@ -414,14 +420,21 @@ export function StoryOverlay({
           <div className="flex items-center gap-3">
             <button
               onClick={onRun}
-              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95"
+              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 font-bold text-white text-[15px] transition-all hover:bg-blue-400 active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+              aria-label={`Try ${repo.title}`}
             >
               <Play className="h-4 w-4 fill-white" /> Try this app
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+              aria-label={`Like ${repo.title} story`}
+            >
               <Heart className="h-5 w-5" />
             </button>
-            <button className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10">
+            <button
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur border border-white/10 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+              aria-label={`Share ${repo.title} story`}
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
