@@ -102,13 +102,14 @@ export default function Sidebar({
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             placeholder="Search"
+            aria-label="Search repositories"
             className="w-full rounded-md border border-white/10 bg-black/20 py-1.5 pl-9 pr-3 text-sm text-white placeholder-zinc-500 shadow-inner outline-none transition-all focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
           />
         </form>
       </div>
 
       {/* ── Navigation List ── */}
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-2 overflow-y-auto">
+      <nav aria-label="Main navigation" className="flex flex-1 flex-col gap-1 px-3 py-2 overflow-y-auto">
         {navItems.map((item) => {
           // Add visual separators
           const isDivider = item.id === "viewed" || item.id === "settings";
@@ -118,7 +119,8 @@ export default function Sidebar({
               {isDivider && <div className="mx-2 my-3 border-t border-white/5" />}
               <button
                 onClick={() => onTabChange(item.id)}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                aria-current={activeTab === item.id ? "page" : undefined}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/80 ${
                   activeTab === item.id
                     ? "bg-white/10 text-white"
                     : "text-zinc-400 hover:bg-white/5 hover:text-white"
@@ -134,7 +136,10 @@ export default function Sidebar({
 
       {/* ── Profile Bottom Region ── */}
       <div className="mt-auto p-4 border-t border-white/5">
-        <button className="flex w-full items-center gap-3 rounded-lg p-2 transition-colors hover:bg-white/5">
+        <button
+          aria-label="User profile"
+          className="flex w-full items-center gap-3 rounded-lg p-2 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/80"
+        >
           <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-black/40 border border-white/10">
             <User className="h-4 w-4 text-zinc-400" />
           </div>
