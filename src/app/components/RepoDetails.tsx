@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -32,7 +32,7 @@ function formatLikes(n: number) {
   return String(n);
 }
 
-export default function RepoDetails({
+function RepoDetails({
   repo,
   showShopActions = false,
   onRun,
@@ -367,6 +367,9 @@ export default function RepoDetails({
     </div>
   );
 }
+
+// Memoized to prevent redundant re-renders of heavy detail modal during parent polling or search updates
+export default memo(RepoDetails);
 
 function StatCell({
   label,
