@@ -4,6 +4,26 @@ import { getRunJobTarget } from "../../../store";
 
 async function proxy(request: Request, context: { params: Promise<{ jobId: string; path: string[] }> }) {
   const { jobId, path } = await context.params;
+
+  for (const segment of path || []) {
+    let decoded = segment;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      return NextResponse.json({ error: "Invalid path segment" }, { status: 400 });
+    }
+    if (
+      decoded === "." ||
+      decoded === ".." ||
+      decoded.includes("/") ||
+      decoded.includes("\\") ||
+      decoded.includes("\0") ||
+      /[\u0000-\u001F\u007F-\u009F]/.test(decoded)
+    ) {
+      return NextResponse.json({ error: "Invalid path segment" }, { status: 400 });
+    }
+  }
+
   const target = await getRunJobTarget(jobId);
   if (!target) {
     return NextResponse.json({ error: "Runtime not ready" }, { status: 409 });
